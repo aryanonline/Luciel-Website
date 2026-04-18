@@ -1,5 +1,8 @@
 import { Link } from "react-router-dom";
+import { Linkedin } from "lucide-react";
 import { Logo } from "./Nav";
+
+const LINKEDIN_URL = "https://www.linkedin.com/in/aryan-singh-726825109/";
 
 export const Footer = () => {
   const year = new Date().getFullYear();
@@ -12,6 +15,15 @@ export const Footer = () => {
             <p className="mt-4 max-w-sm text-sm text-muted-foreground">
               The judgment layer for regulated AI products. Built in Markham, Ontario.
             </p>
+            <a
+              href={LINKEDIN_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Aryan Singh on LinkedIn"
+              className="mt-5 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+            >
+              <Linkedin size={16} />
+            </a>
           </div>
           <div>
             <div className="eyebrow mb-4">Product</div>

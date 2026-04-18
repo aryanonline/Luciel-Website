@@ -1,8 +1,12 @@
 import { Link } from "react-router-dom";
+import { Linkedin } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { SiteLayout } from "@/components/SiteLayout";
 import { Eyebrow, SectionHeading } from "@/components/Section";
 import { CtaBlock } from "@/components/CtaBlock";
+import { Button } from "@/components/ui/button";
+
+const LINKEDIN_URL = "https://www.linkedin.com/in/aryan-singh-726825109/";
 
 const About = () => {
   return (
@@ -54,12 +58,12 @@ const About = () => {
           <div>
             <Eyebrow>FOUNDER</Eyebrow>
             <h2 className="font-display mt-4 text-3xl font-semibold tracking-tight md:text-4xl">
-              Aryan
+              Aryan Singh
             </h2>
             <p className="mt-4 text-muted-foreground">
-              Solo technical founder. Based in Markham, Ontario. Full-stack architect of Luciel
-              — every layer from FastAPI services down to the policy enforcement and pgvector
-              memory store.
+              Founded in Markham, Ontario by Aryan Singh. Solo technical founder and full-stack
+              architect of Luciel — every layer from FastAPI services down to the policy
+              enforcement and pgvector memory store.
             </p>
             <p className="mt-4 text-muted-foreground">
               Building in public. 24 of 35 engineering milestones shipped to production. Follow
@@ -69,6 +73,11 @@ const About = () => {
               </Link>
               .
             </p>
+            <Button asChild variant="outline" className="mt-6">
+              <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer">
+                <Linkedin /> Connect on LinkedIn
+              </a>
+            </Button>
           </div>
           <div className="rounded-xl border border-border bg-card p-8">
             <div className="grid grid-cols-2 gap-6">
