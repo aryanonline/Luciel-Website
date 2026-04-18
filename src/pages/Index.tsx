@@ -143,6 +143,12 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Security & Compliance */}
+      <SecurityCompliance />
+
+      {/* What makes Luciel different */}
+      <WhatMakesDifferent />
+
       {/* Pricing preview */}
       <section className="section border-t border-border">
         <div className="container-narrow">
