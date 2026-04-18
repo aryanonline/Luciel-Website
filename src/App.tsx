@@ -10,6 +10,10 @@ import DesignPartners from "./pages/DesignPartners.tsx";
 import About from "./pages/About.tsx";
 import Changelog from "./pages/Changelog.tsx";
 import Contact from "./pages/Contact.tsx";
+import Pricing from "./pages/Pricing.tsx";
+import Checkout from "./pages/Checkout.tsx";
+import Careers from "./pages/Careers.tsx";
+import CareersApply from "./pages/CareersApply.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
@@ -39,6 +43,10 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/changelog" element={<Changelog />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/careers" element={<Careers />} />
+            <Route path="/careers/apply" element={<CareersApply />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
