@@ -122,7 +122,7 @@ const DesignPartners = () => {
       </section>
 
       {/* Form */}
-      <section className="section border-t border-border">
+      <section id="apply" className="section border-t border-border scroll-mt-24">
         <div className="container-narrow grid gap-12 md:grid-cols-[1fr_1.2fr]">
           <div>
             <Eyebrow>APPLY</Eyebrow>

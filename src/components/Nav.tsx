@@ -5,8 +5,9 @@ import { Menu, X } from "lucide-react";
 
 const links = [
   { to: "/luciel", label: "Luciel" },
+  { to: "/pricing", label: "Pricing" },
   { to: "/design-partners", label: "Design Partners" },
-  { to: "/about", label: "About" },
+  { to: "/careers", label: "Careers", hiring: true },
   { to: "/changelog", label: "Changelog" },
   { to: "/contact", label: "Contact" },
 ];
@@ -45,33 +46,38 @@ export const Nav = () => {
       <div className="container-narrow flex h-16 items-center justify-between">
         <Logo />
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center gap-7 lg:flex">
           {links.map((l) => (
             <RouterNavLink
               key={l.to}
               to={l.to}
               className={({ isActive }) =>
-                `text-sm transition-colors ${
+                `relative text-sm transition-colors ${
                   isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                 }`
               }
             >
-              {l.label}
+              <span className="inline-flex items-center gap-1.5">
+                {l.label}
+                {l.hiring && (
+                  <span className="relative flex h-1.5 w-1.5" aria-label="We're hiring">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                  </span>
+                )}
+              </span>
             </RouterNavLink>
           ))}
         </nav>
 
-        <div className="hidden items-center gap-2 md:flex">
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/contact">Book intro call</Link>
-          </Button>
+        <div className="hidden items-center gap-2 lg:flex">
           <Button asChild size="sm">
-            <Link to="/design-partners">Become a design partner</Link>
+            <Link to="/design-partners">Request Access</Link>
           </Button>
         </div>
 
         <button
-          className="rounded-md border border-border p-2 md:hidden"
+          className="rounded-md border border-border p-2 lg:hidden"
           aria-label="Toggle menu"
           onClick={() => setOpen((o) => !o)}
         >
@@ -80,19 +86,17 @@ export const Nav = () => {
       </div>
 
       {open && (
-        <div className="border-t border-border bg-background md:hidden">
+        <div className="border-t border-border bg-background lg:hidden">
           <div className="container-narrow flex flex-col gap-1 py-4">
             {links.map((l) => (
-              <Link key={l.to} to={l.to} className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">
+              <Link key={l.to} to={l.to} className="flex items-center gap-2 rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">
                 {l.label}
+                {l.hiring && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
               </Link>
             ))}
-            <div className="mt-3 flex flex-col gap-2">
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/contact">Book intro call</Link>
-              </Button>
-              <Button asChild size="sm">
-                <Link to="/design-partners">Become a design partner</Link>
+            <div className="mt-3">
+              <Button asChild size="sm" className="w-full">
+                <Link to="/design-partners">Request Access</Link>
               </Button>
             </div>
           </div>

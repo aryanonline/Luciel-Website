@@ -4,6 +4,8 @@ import { SectionHeading, Eyebrow, FeatureCard } from "@/components/Section";
 import { CtaBlock } from "@/components/CtaBlock";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { LucielOrb } from "@/components/LucielOrb";
+import { PricingTiers } from "./Pricing";
 import {
   Accordion,
   AccordionContent,
@@ -69,6 +71,9 @@ const Luciel = () => {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="mesh-bg absolute inset-0 -z-10" aria-hidden="true" />
+        <div className="pointer-events-none absolute -right-32 -top-10 -z-10 hidden md:block" aria-hidden="true">
+          <LucielOrb size={420} echo />
+        </div>
         <div className="container-narrow pt-24 pb-20 md:pt-36 md:pb-28">
           <Eyebrow>LUCIEL</Eyebrow>
           <h1 className="font-display mt-5 max-w-4xl text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl">
@@ -198,6 +203,20 @@ const Luciel = () => {
               </AccordionItem>
             ))}
           </Accordion>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section className="section border-t border-border">
+        <div className="container-narrow">
+          <SectionHeading
+            eyebrow="PRICING"
+            title="Pricing that scales with judgment volume."
+            description="Start in the sandbox. Move to Team for production. Talk to us for enterprise residency."
+          />
+          <div className="mt-14">
+            <PricingTiers />
+          </div>
         </div>
       </section>
 

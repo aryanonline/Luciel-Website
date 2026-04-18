@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { Seo } from "@/components/Seo";
 import { SiteLayout } from "@/components/SiteLayout";
@@ -18,6 +19,12 @@ const schema = z.object({
 
 const Contact = () => {
   const [sent, setSent] = useState(false);
+  const [params] = useSearchParams();
+  const topic = params.get("topic");
+  const isEnterprise = topic === "enterprise";
+  const defaultMessage = isEnterprise
+    ? "I'd like to talk about Luciel for enterprise: residency, SLA, on-prem options."
+    : "";
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -122,7 +129,7 @@ const Contact = () => {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="message">Message</Label>
-                  <Textarea id="message" name="message" rows={6} maxLength={2000} />
+                  <Textarea id="message" name="message" rows={6} maxLength={2000} defaultValue={defaultMessage} />
                 </div>
                 <Button type="submit" size="lg">
                   Send message

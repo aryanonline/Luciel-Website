@@ -1,12 +1,19 @@
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { SiteLayout } from "@/components/SiteLayout";
 import { SectionHeading, FeatureCard, Eyebrow } from "@/components/Section";
 import { CtaBlock } from "@/components/CtaBlock";
 import { Button } from "@/components/ui/button";
+import { LucielOrb, TypewriterRotator } from "@/components/LucielOrb";
+import { PricingTiers } from "./Pricing";
 
 const techLogos = ["FastAPI", "PostgreSQL", "pgvector", "AWS", "Anthropic", "OpenAI"];
+
+const scrollToApply = () => {
+  // On home, send users to the design-partners apply form
+  window.location.href = "/design-partners#apply";
+};
 
 const Index = () => {
   return (
@@ -17,48 +24,49 @@ const Index = () => {
         path="/"
       />
 
-      {/* Hero */}
+      {/* Hero — Animated orb */}
       <section className="relative overflow-hidden">
         <div className="mesh-bg absolute inset-0 -z-10" aria-hidden="true" />
-        <div className="container-narrow pt-24 pb-24 md:pt-36 md:pb-32">
-          <div className="max-w-4xl">
-            <Eyebrow>VANTAGEMIND AI</Eyebrow>
-            <h1 className="font-display mt-5 text-4xl font-semibold leading-[1.05] tracking-tight md:text-7xl">
-              The <span className="accent-text">judgment</span> layer for regulated AI products.
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
-              Luciel handles auth, memory, consent, retention, and multi-tenancy so your team ships
-              domain intelligence — not plumbing.
-            </p>
-            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg">
-                <Link to="/design-partners">
-                  Become a design partner <ArrowRight className="ml-1" />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="ghost">
-                <Link to="/contact">Book intro call</Link>
-              </Button>
-            </div>
+        <div className="container-narrow flex min-h-[88vh] flex-col items-center justify-center pt-24 pb-16 text-center md:pt-28">
+          <Eyebrow>VANTAGEMIND AI · LUCIEL</Eyebrow>
+
+          <div className="relative mt-10 flex items-center justify-center">
+            <LucielOrb size={420} />
           </div>
 
-          <div className="mt-20 border-t border-border pt-8">
-            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              Built on
-            </div>
-            <div className="mt-4 flex flex-wrap items-center gap-x-10 gap-y-3">
-              {techLogos.map((t) => (
-                <span key={t} className="font-display text-sm text-muted-foreground/80">
-                  {t}
-                </span>
-              ))}
-            </div>
+          <div className="mt-12 min-h-[2em]">
+            <TypewriterRotator />
+          </div>
+
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+            <Button size="lg" onClick={scrollToApply}>
+              Request Access <ArrowRight />
+            </Button>
+            <Button asChild size="lg" variant="ghost">
+              <Link to="/luciel">See Luciel</Link>
+            </Button>
+          </div>
+
+          <div className="scroll-hint mt-16 text-muted-foreground">
+            <ChevronDown size={20} />
+          </div>
+        </div>
+      </section>
+
+      {/* Tech logos */}
+      <section className="border-t border-border">
+        <div className="container-narrow py-10">
+          <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Built on</div>
+          <div className="mt-4 flex flex-wrap items-center gap-x-10 gap-y-3">
+            {techLogos.map((t) => (
+              <span key={t} className="font-display text-sm text-muted-foreground/80">{t}</span>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Problem */}
-      <section className="section">
+      <section className="section border-t border-border">
         <div className="container-narrow">
           <SectionHeading
             eyebrow="THE PROBLEM"
@@ -90,43 +98,22 @@ const Index = () => {
             title="One fixed AI mind. Infinite specialized instances."
             description="Luciel separates the parts of an AI system that should never change — judgment, policy, memory — from the parts that should be configured per industry and per task."
           />
-
           <div className="mt-14 grid gap-4 md:grid-cols-3">
             {[
-              {
-                tag: "TIER 01",
-                title: "Tenant",
-                desc: "Persona, consent, retention. Per-customer isolation enforced at every read and write.",
-              },
-              {
-                tag: "TIER 02",
-                title: "Domain",
-                desc: "Industry knowledge, vocabulary, tools. Mortgage, property management, legal — configured, not coded.",
-              },
-              {
-                tag: "TIER 03",
-                title: "Agent",
-                desc: "Task-specific roles with scoped tools and policies. Composable, auditable, replaceable.",
-              },
+              { tag: "TIER 01", title: "Tenant", desc: "Persona, consent, retention. Per-customer isolation enforced at every read and write." },
+              { tag: "TIER 02", title: "Domain", desc: "Industry knowledge, vocabulary, tools. Mortgage, property management, legal — configured, not coded." },
+              { tag: "TIER 03", title: "Agent", desc: "Task-specific roles with scoped tools and policies. Composable, auditable, replaceable." },
             ].map((t, i) => (
-              <div
-                key={t.title}
-                className="relative rounded-xl border border-border bg-card p-6"
-              >
+              <div key={t.title} className="relative rounded-xl border border-border bg-card p-6">
                 <div className="flex items-center justify-between">
                   <div className="text-xs font-mono text-primary">{t.tag}</div>
-                  {i < 2 && (
-                    <ArrowRight className="hidden text-muted-foreground md:block" size={16} />
-                  )}
+                  {i < 2 && <ArrowRight className="hidden text-muted-foreground md:block" size={16} />}
                 </div>
-                <h3 className="font-display mt-6 text-xl font-semibold tracking-tight">
-                  {t.title}
-                </h3>
+                <h3 className="font-display mt-6 text-xl font-semibold tracking-tight">{t.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t.desc}</p>
               </div>
             ))}
           </div>
-
           <p className="mt-10 max-w-xl text-base text-muted-foreground">
             <span className="text-foreground">Configure, don't code.</span> The judgment layer
             stays fixed and audited. Domains and agents become a configuration surface your
@@ -141,18 +128,9 @@ const Index = () => {
           <SectionHeading eyebrow="WHY NOW" title="The window is opening for vertical AI." />
           <div className="mt-14 grid gap-10 md:grid-cols-3">
             {[
-              {
-                t: "LLMs crossed the reliability threshold",
-                d: "Frontier models are now consistent enough that the bottleneck is no longer raw capability — it's everything around the model.",
-              },
-              {
-                t: "Compliance is a buying requirement",
-                d: "PIPEDA, SOC 2, HIPAA, GDPR. Procurement teams now ask about retention, consent, and tenancy before they ask about features.",
-              },
-              {
-                t: "SMBs want vertical AI but can't build it",
-                d: "Mid-market firms in regulated industries want their own AI surface. They don't have the engineering depth to build the infrastructure underneath.",
-              },
+              { t: "LLMs crossed the reliability threshold", d: "Frontier models are now consistent enough that the bottleneck is no longer raw capability — it's everything around the model." },
+              { t: "Compliance is a buying requirement", d: "PIPEDA, SOC 2, HIPAA, GDPR. Procurement teams now ask about retention, consent, and tenancy before they ask about features." },
+              { t: "SMBs want vertical AI but can't build it", d: "Mid-market firms in regulated industries want their own AI surface. They don't have the engineering depth to build the infrastructure underneath." },
             ].map((p, i) => (
               <div key={p.t}>
                 <div className="font-mono text-xs text-primary">{String(i + 1).padStart(2, "0")}</div>
@@ -160,6 +138,25 @@ const Index = () => {
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.d}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing preview */}
+      <section className="section border-t border-border">
+        <div className="container-narrow">
+          <SectionHeading
+            eyebrow="PRICING"
+            title="Start free. Scale when you ship."
+            description="Three tiers. No surprises. Talk to us when residency, SLA, or on-prem matter."
+          />
+          <div className="mt-14">
+            <PricingTiers />
+          </div>
+          <div className="mt-10">
+            <Button asChild variant="ghost">
+              <Link to="/pricing">See full comparison <ArrowRight /></Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -179,12 +176,8 @@ const Index = () => {
               { v: "Open", l: "Seeking first design partners" },
             ].map((s) => (
               <div key={s.l} className="bg-card p-6">
-                <div className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
-                  {s.v}
-                </div>
-                <div className="mt-2 text-xs uppercase tracking-wider text-muted-foreground">
-                  {s.l}
-                </div>
+                <div className="font-display text-2xl font-semibold tracking-tight md:text-3xl">{s.v}</div>
+                <div className="mt-2 text-xs uppercase tracking-wider text-muted-foreground">{s.l}</div>
               </div>
             ))}
           </div>
