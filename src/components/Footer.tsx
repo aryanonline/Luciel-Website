@@ -1,5 +1,8 @@
 import { Link } from "react-router-dom";
+import { Linkedin } from "lucide-react";
 import { Logo } from "./Nav";
+
+const LINKEDIN_URL = "https://www.linkedin.com/in/aryan-singh-726825109/";
 
 export const Footer = () => {
   const year = new Date().getFullYear();
