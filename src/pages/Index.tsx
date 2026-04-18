@@ -7,6 +7,7 @@ import { CtaBlock } from "@/components/CtaBlock";
 import { Button } from "@/components/ui/button";
 import { LucielOrb, TypewriterRotator } from "@/components/LucielOrb";
 import { PricingTiers } from "./Pricing";
+import { SecurityCompliance, WhatMakesDifferent } from "@/components/HomeSections";
 
 const techLogos = ["FastAPI", "PostgreSQL", "pgvector", "AWS", "Anthropic", "OpenAI"];
 
