@@ -1,8 +1,12 @@
 import { Link } from "react-router-dom";
+import { Linkedin } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { SiteLayout } from "@/components/SiteLayout";
 import { Eyebrow, SectionHeading } from "@/components/Section";
 import { CtaBlock } from "@/components/CtaBlock";
+import { Button } from "@/components/ui/button";
+
+const LINKEDIN_URL = "https://www.linkedin.com/in/aryan-singh-726825109/";
 
 const About = () => {
   return (
