@@ -17,7 +17,7 @@ export const SectionHeading = ({
 }) => (
   <div className={`max-w-3xl ${align === "center" ? "mx-auto text-center" : ""}`}>
     {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-    <h2 className="font-display mt-4 text-3xl font-semibold leading-tight tracking-tight md:text-[44px] md:leading-[1.05]">
+    <h2 className="font-display mt-4 text-4xl leading-[1.05] tracking-tight md:text-[52px]">
       {title}
     </h2>
     {description && (
@@ -26,22 +26,18 @@ export const SectionHeading = ({
   </div>
 );
 
-export const FeatureCard = ({
+export const HairlineCard = ({
+  eyebrow,
   title,
   children,
-  index,
 }: {
+  eyebrow?: string;
   title: string;
   children: ReactNode;
-  index?: number;
 }) => (
-  <div className="group relative rounded-xl border border-border bg-card p-6 transition-colors hover:border-primary/40">
-    {typeof index === "number" && (
-      <div className="mb-4 text-xs font-mono text-muted-foreground">
-        {String(index).padStart(2, "0")}
-      </div>
-    )}
-    <h3 className="font-display text-lg font-semibold tracking-tight text-foreground">{title}</h3>
-    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{children}</p>
+  <div className="rounded-xl border border-border bg-card p-7 transition-colors hover:border-primary/40">
+    {eyebrow && <div className="eyebrow mb-3">{eyebrow}</div>}
+    <h3 className="font-display text-2xl tracking-tight text-foreground">{title}</h3>
+    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{children}</p>
   </div>
 );
