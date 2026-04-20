@@ -3,67 +3,66 @@ import { Linkedin } from "lucide-react";
 import { Logo } from "./Nav";
 
 const LINKEDIN_URL = "https://www.linkedin.com/in/aryan-singh-726825109/";
+const CONTACT_EMAIL = "contact@vantagemind.ai";
 
-export const Footer = () => {
-  const year = new Date().getFullYear();
-  return (
-    <footer className="border-t border-border">
-      <div className="container-narrow py-16">
-        <div className="grid gap-12 md:grid-cols-5">
-          <div className="md:col-span-2">
-            <Logo />
-            <p className="mt-4 max-w-sm text-sm text-muted-foreground">
-              The judgment layer for regulated AI products. Built in Markham, Ontario.
-            </p>
+export const Footer = () => (
+  <footer className="border-t border-border">
+    <div className="container-narrow py-16">
+      <div className="grid gap-12 md:grid-cols-5">
+        <div className="md:col-span-2">
+          <Logo />
+          <p className="mt-4 max-w-sm text-sm text-muted-foreground">
+            The AI judgment layer.
+          </p>
+          <div className="mt-5 flex items-center gap-3">
             <a
               href={LINKEDIN_URL}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Aryan Singh on LinkedIn"
-              className="mt-5 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
             >
               <Linkedin size={16} />
             </a>
-          </div>
-          <div>
-            <div className="eyebrow mb-4">Product</div>
-            <ul className="space-y-3 text-sm text-muted-foreground">
-              <li><Link to="/luciel" className="hover:text-foreground">Luciel</Link></li>
-              <li><Link to="/pricing" className="hover:text-foreground">Pricing</Link></li>
-              <li><Link to="/design-partners" className="hover:text-foreground">Design Partners</Link></li>
-              <li><Link to="/changelog" className="hover:text-foreground">Changelog</Link></li>
-            </ul>
-          </div>
-          <div>
-            <div className="eyebrow mb-4">Careers</div>
-            <ul className="space-y-3 text-sm text-muted-foreground">
-              <li>
-                <Link to="/careers" className="inline-flex items-center gap-2 hover:text-foreground">
-                  Open roles
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                    Hiring
-                  </span>
-                </Link>
-              </li>
-              <li><Link to="/careers#process" className="hover:text-foreground">Hiring process</Link></li>
-              <li><Link to="/careers/apply" className="hover:text-foreground">General application</Link></li>
-            </ul>
-          </div>
-          <div>
-            <div className="eyebrow mb-4">Company</div>
-            <ul className="space-y-3 text-sm text-muted-foreground">
-              <li><Link to="/about" className="hover:text-foreground">About</Link></li>
-              <li><Link to="/contact" className="hover:text-foreground">Contact</Link></li>
-              <li><a href="mailto:hello@vantagemind.ai" className="hover:text-foreground">hello@vantagemind.ai</a></li>
-            </ul>
+            <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              {CONTACT_EMAIL}
+            </a>
           </div>
         </div>
-        <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-border pt-6 text-xs text-muted-foreground md:flex-row md:items-center">
-          <div>VantageMind AI · Markham, Ontario · Canada</div>
-          <div>© {year} VantageMind AI. All rights reserved.</div>
+
+        <div>
+          <div className="eyebrow mb-4">Product</div>
+          <ul className="space-y-3 text-sm text-muted-foreground">
+            <li><Link to="/luciel" className="hover:text-foreground">Luciel</Link></li>
+            <li><Link to="/security" className="hover:text-foreground">Security</Link></li>
+            <li><Link to="/doctrine" className="hover:text-foreground">Doctrine</Link></li>
+          </ul>
+        </div>
+
+        <div>
+          <div className="eyebrow mb-4">Company</div>
+          <ul className="space-y-3 text-sm text-muted-foreground">
+            <li><Link to="/about" className="hover:text-foreground">About</Link></li>
+            <li><a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-foreground">Contact</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div className="eyebrow mb-4">Legal</div>
+          <ul className="space-y-3 text-sm text-muted-foreground">
+            <li><span className="cursor-not-allowed opacity-60">Privacy</span></li>
+            <li><span className="cursor-not-allowed opacity-60">Terms</span></li>
+            <li><span className="cursor-not-allowed opacity-60">PIPEDA Statement</span></li>
+          </ul>
         </div>
       </div>
-    </footer>
-  );
-};
+
+      <div className="mt-12 border-t border-border pt-6 text-xs text-muted-foreground">
+        © 2026 VantageMind AI · Markham, Ontario, Canada · PIPEDA-compliant by design
+      </div>
+    </div>
+  </footer>
+);
