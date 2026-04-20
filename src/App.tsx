@@ -1,19 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import Luciel from "./pages/Luciel.tsx";
-import DesignPartners from "./pages/DesignPartners.tsx";
+import Doctrine from "./pages/Doctrine.tsx";
+import Security from "./pages/Security.tsx";
 import About from "./pages/About.tsx";
-import Changelog from "./pages/Changelog.tsx";
-import Contact from "./pages/Contact.tsx";
-import Pricing from "./pages/Pricing.tsx";
-import Checkout from "./pages/Checkout.tsx";
-import Careers from "./pages/Careers.tsx";
-import CareersApply from "./pages/CareersApply.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
@@ -39,14 +34,17 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/luciel" element={<Luciel />} />
-            <Route path="/design-partners" element={<DesignPartners />} />
+            <Route path="/doctrine" element={<Doctrine />} />
+            <Route path="/security" element={<Security />} />
             <Route path="/about" element={<About />} />
-            <Route path="/changelog" element={<Changelog />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/careers" element={<Careers />} />
-            <Route path="/careers/apply" element={<CareersApply />} />
+            {/* Legacy redirects */}
+            <Route path="/contact" element={<Navigate to="/" replace />} />
+            <Route path="/pricing" element={<Navigate to="/" replace />} />
+            <Route path="/checkout" element={<Navigate to="/" replace />} />
+            <Route path="/careers" element={<Navigate to="/about" replace />} />
+            <Route path="/careers/apply" element={<Navigate to="/about" replace />} />
+            <Route path="/design-partners" element={<Navigate to="/" replace />} />
+            <Route path="/changelog" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
