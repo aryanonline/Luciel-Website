@@ -273,7 +273,7 @@ const Index = () => {
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="font-display text-3xl leading-[1.1] tracking-tight md:text-5xl">
               We are taking on two design-partner tenants in 2026.
-            </h2>seamless
+            </h2>
             <p className="mx-auto mt-6 max-w-2xl text-muted-foreground">
               If you run a brokerage, advisory, or firm where judgment matters — let us talk.
             </p>
