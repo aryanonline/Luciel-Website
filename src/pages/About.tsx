@@ -120,7 +120,7 @@ const About = () => {
         <FadeIn className="container-narrow">
           <Eyebrow>HIRING</Eyebrow>
           <p className="font-display mt-4 max-w-3xl text-3xl leading-[1.2] tracking-tight md:text-4xl">
-            We are not hiring yet. We will be in 2026.
+            We are not currently hiring.
           </p>
           <p className="mt-5 max-w-2xl text-muted-foreground">
             When we open roles, they will be listed here.
