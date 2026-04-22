@@ -41,6 +41,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             {/* Legacy redirects */}
             <Route path="/contact" element={<Navigate to="/" replace />} />
+            <Route path="/how-it-works" element={<Navigate to="/luciel#how-it-works" replace />} />
             <Route path="/pricing" element={<Navigate to="/" replace />} />
             <Route path="/checkout" element={<Navigate to="/" replace />} />
             <Route path="/careers" element={<Navigate to="/about" replace />} />

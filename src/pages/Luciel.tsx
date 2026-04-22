@@ -110,7 +110,7 @@ const Luciel = () => {
       </section>
 
       {/* Runtime loop */}
-      <section className="section border-t border-border">
+      <section id="how-it-works" className="section border-t border-border scroll-mt-24">
         <FadeIn className="container-narrow">
           <SectionHeading eyebrow="RUNTIME LOOP" title="What happens on every turn." />
           <div className="mt-10 overflow-hidden rounded-xl border border-border bg-card">
