@@ -17,10 +17,17 @@ import { useLocation } from "react-router-dom";
 const queryClient = new QueryClient();
 
 const ScrollToTop = () => {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   useEffect(() => {
+    if (hash) {
+      const el = document.getElementById(hash.slice(1));
+      if (el) {
+        el.scrollIntoView({ behavior: "instant" as ScrollBehavior, block: "start" });
+        return;
+      }
+    }
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-  }, [pathname]);
+  }, [pathname, hash]);
   return null;
 };
 
@@ -41,6 +48,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             {/* Legacy redirects */}
             <Route path="/contact" element={<Navigate to="/" replace />} />
+            <Route path="/how-it-works" element={<Navigate to="/luciel#how-it-works" replace />} />
             <Route path="/pricing" element={<Navigate to="/" replace />} />
             <Route path="/checkout" element={<Navigate to="/" replace />} />
             <Route path="/careers" element={<Navigate to="/about" replace />} />
