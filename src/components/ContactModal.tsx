@@ -4,28 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 /* ===========================================================
    ContactModal — pre-revenue contact capture
    -----------------------------------------------------------
    Plumbing: Web3Forms (https://web3forms.com) — pure
-   client-side POST, no backend infra needed. Email is delivered
-   to whatever inbox is configured on the Web3Forms access key.
-   We chose Web3Forms over Resend because Resend requires server
-   infrastructure (API key cannot ship in client bundles), and
-   we have intentionally NOT enabled Lovable Cloud / Supabase
-   to honor our Canadian data-residency promise.
-
-   Key sourcing:
-   - VITE_WEB3FORMS_ACCESS_KEY is read from import.meta.env
-   - If unset, the form falls back to a mailto: link so nothing
-     silently drops.
+   client-side POST. The access key (VITE_WEB3FORMS_ACCESS_KEY)
+   is read from import.meta.env. If unset, falls back to mailto.
 
    Anti-abuse:
-   - Honeypot field "website" must remain empty
-   - Client-side localStorage throttle: 1 submission / 60s
+   - Honeypot field "botcheck" must remain empty (Web3Forms
+     server-side filters submissions where this is non-empty).
+   - Client-side sessionStorage throttle: 1 submission / 30s.
    ============================================================ */
 
 const ACCESS_KEY = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY as string | undefined;
@@ -34,6 +25,10 @@ const ENDPOINT = "https://api.web3forms.com/submit";
 const RECIPIENT = "contact@vantagemind.ai";
 const THROTTLE_MS = 30_000;
 const STORAGE_KEY = "vm_contact_last_submit";
+
+// Lightweight email regex — HTML5 type="email" is the primary gate;
+// this is a belt-and-braces check before POST.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 let warnedMissingKey = false;
 
@@ -48,50 +43,67 @@ export const useContactModal = () => {
 
 type FormState = {
   name: string;
-  firm: string;
+  email: string;
+  company: string;
   role: string;
-  firmSize: string;
-  problem: string;
-  source: string;
-  website: string; // honeypot
+  use_case: string;
+  message: string;
+  botcheck: string; // honeypot
 };
 
+type FieldErrors = Partial<Record<keyof FormState, string>>;
+
 const initial: FormState = {
-  name: "", firm: "", role: "", firmSize: "", problem: "", source: "", website: "",
+  name: "", email: "", company: "", role: "", use_case: "", message: "", botcheck: "",
 };
 
 export const ContactModalProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<FormState>(initial);
+  const [errors, setErrors] = useState<FieldErrors>({});
 
   const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => setIsOpen(false), []);
 
   useEffect(() => {
     if (!isOpen) {
-      // Reset on close
-      const t = setTimeout(() => setForm(initial), 200);
+      const t = setTimeout(() => {
+        setForm(initial);
+        setErrors({});
+      }, 200);
       return () => clearTimeout(t);
     }
   }, [isOpen]);
+
+  const validate = (s: FormState): FieldErrors => {
+    const e: FieldErrors = {};
+    if (!s.name.trim()) e.name = "Required";
+    if (!s.email.trim()) e.email = "Required";
+    else if (!EMAIL_RE.test(s.email.trim())) e.email = "Enter a valid email";
+    if (!s.company.trim()) e.company = "Required";
+    if (!s.role.trim()) e.role = "Required";
+    if (!s.use_case.trim()) e.use_case = "Required";
+    return e;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Honeypot — silent drop
-    if (form.website.trim() !== "") {
+    if (form.botcheck.trim() !== "") {
       close();
       return;
     }
 
-    // Required fields
-    if (!form.name || !form.firm || !form.role || !form.firmSize || !form.problem) {
-      toast.error("Please fill in all required fields.");
+    const fieldErrors = validate(form);
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
       return;
     }
+    setErrors({});
 
-    // Rate-limit (sessionStorage, 30s)
+    // Rate-limit
     const last = Number(sessionStorage.getItem(STORAGE_KEY) || 0);
     if (Date.now() - last < THROTTLE_MS) {
       const wait = Math.ceil((THROTTLE_MS - (Date.now() - last)) / 1000);
@@ -104,18 +116,18 @@ export const ContactModalProvider = ({ children }: { children: ReactNode }) => {
     const subject = `VantageMind AI — Design-partner pilot request from ${form.name}`;
     const messageBody =
       `Name: ${form.name}\n` +
-      `Firm: ${form.firm}\n` +
-      `Role: ${form.role}\n` +
-      `Firm size: ${form.firmSize}\n` +
-      `How they heard about us: ${form.source || "—"}\n\n` +
-      `Problem to solve:\n${form.problem}`;
+      `Email: ${form.email}\n` +
+      `Company: ${form.company}\n` +
+      `Role: ${form.role}\n\n` +
+      `What they'd judge with Luciel:\n${form.use_case}\n\n` +
+      `Anything else:\n${form.message || "—"}`;
 
     const keyMissing = !ACCESS_KEY || ACCESS_KEY === ACCESS_KEY_PLACEHOLDER;
 
     if (keyMissing) {
       if (!warnedMissingKey) {
         console.warn(
-          "[ContactModal] VITE_WEB3FORMS_ACCESS_KEY is missing or placeholder — falling back to mailto. Set it in .env.local to enable POST submission.",
+          "[ContactModal] VITE_WEB3FORMS_ACCESS_KEY is missing or placeholder — falling back to mailto.",
         );
         warnedMissingKey = true;
       }
@@ -137,12 +149,12 @@ export const ContactModalProvider = ({ children }: { children: ReactNode }) => {
           subject,
           from_name: "VantageMind AI Website",
           name: form.name,
-          firm: form.firm,
+          email: form.email,
+          company: form.company,
           role: form.role,
-          firm_size: form.firmSize,
-          source: form.source,
+          use_case: form.use_case,
           message: messageBody,
-          botcheck: "", // honeypot — server-side filter
+          botcheck: form.botcheck, // honeypot — Web3Forms server-side filter
           redirect: false,
         }),
       });
@@ -161,8 +173,10 @@ export const ContactModalProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
+  const update = <K extends keyof FormState>(k: K, v: FormState[K]) => {
     setForm((s) => ({ ...s, [k]: v }));
+    if (errors[k]) setErrors((prev) => ({ ...prev, [k]: undefined }));
+  };
 
   return (
     <ContactModalContext.Provider value={{ open, close }}>
@@ -177,18 +191,18 @@ export const ContactModalProvider = ({ children }: { children: ReactNode }) => {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="mt-2 space-y-4">
+          <form onSubmit={handleSubmit} noValidate className="mt-2 space-y-4">
             {/* Honeypot — visually hidden, off-screen, not tab-focusable */}
             <div aria-hidden="true" className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden">
               <label>
-                Website
+                Leave this field empty
                 <input
                   type="text"
-                  name="website"
+                  name="botcheck"
                   tabIndex={-1}
                   autoComplete="off"
-                  value={form.website}
-                  onChange={(e) => update("website", e.target.value)}
+                  value={form.botcheck}
+                  onChange={(e) => update("botcheck", e.target.value)}
                 />
               </label>
             </div>
@@ -196,44 +210,77 @@ export const ContactModalProvider = ({ children }: { children: ReactNode }) => {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="cm-name">Name</Label>
-                <Input id="cm-name" required value={form.name} onChange={(e) => update("name", e.target.value)} />
+                <Input
+                  id="cm-name"
+                  name="name"
+                  autoComplete="name"
+                  value={form.name}
+                  onChange={(e) => update("name", e.target.value)}
+                  aria-invalid={!!errors.name}
+                />
+                {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="cm-firm">Firm</Label>
-                <Input id="cm-firm" required value={form.firm} onChange={(e) => update("firm", e.target.value)} />
+                <Label htmlFor="cm-email">Email</Label>
+                <Input
+                  id="cm-email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={form.email}
+                  onChange={(e) => update("email", e.target.value)}
+                  aria-invalid={!!errors.email}
+                />
+                {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cm-company">Company</Label>
+                <Input
+                  id="cm-company"
+                  name="company"
+                  autoComplete="organization"
+                  value={form.company}
+                  onChange={(e) => update("company", e.target.value)}
+                  aria-invalid={!!errors.company}
+                />
+                {errors.company && <p className="text-xs text-destructive">{errors.company}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="cm-role">Role</Label>
-                <Input id="cm-role" required value={form.role} onChange={(e) => update("role", e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="cm-size">Firm size</Label>
-                <Select value={form.firmSize} onValueChange={(v) => update("firmSize", v)}>
-                  <SelectTrigger id="cm-size"><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1-10">1–10</SelectItem>
-                    <SelectItem value="11-50">11–50</SelectItem>
-                    <SelectItem value="51-200">51–200</SelectItem>
-                    <SelectItem value="200+">200+</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  id="cm-role"
+                  name="role"
+                  autoComplete="organization-title"
+                  value={form.role}
+                  onChange={(e) => update("role", e.target.value)}
+                  aria-invalid={!!errors.role}
+                />
+                {errors.role && <p className="text-xs text-destructive">{errors.role}</p>}
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="cm-problem">What problem are you trying to solve?</Label>
+              <Label htmlFor="cm-use-case">What would Luciel judge for you?</Label>
               <Textarea
-                id="cm-problem"
-                required
+                id="cm-use-case"
+                name="use_case"
                 rows={4}
-                value={form.problem}
-                onChange={(e) => update("problem", e.target.value)}
+                value={form.use_case}
+                onChange={(e) => update("use_case", e.target.value)}
+                aria-invalid={!!errors.use_case}
               />
+              {errors.use_case && <p className="text-xs text-destructive">{errors.use_case}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="cm-source">How did you hear about us?</Label>
-              <Input id="cm-source" value={form.source} onChange={(e) => update("source", e.target.value)} />
+              <Label htmlFor="cm-message">Anything else we should know?</Label>
+              <Textarea
+                id="cm-message"
+                name="message"
+                rows={3}
+                value={form.message}
+                onChange={(e) => update("message", e.target.value)}
+              />
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-2">
