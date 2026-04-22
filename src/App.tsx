@@ -10,6 +10,7 @@ import Doctrine from "./pages/Doctrine.tsx";
 import Security from "./pages/Security.tsx";
 import About from "./pages/About.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import { ContactModalProvider } from "./components/ContactModal";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -31,6 +32,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <ScrollToTop />
+          <ContactModalProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/luciel" element={<Luciel />} />
@@ -47,6 +49,7 @@ const App = () => (
             <Route path="/changelog" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </ContactModalProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
