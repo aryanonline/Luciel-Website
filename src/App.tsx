@@ -10,7 +10,7 @@ import Doctrine from "./pages/Doctrine.tsx";
 import Security from "./pages/Security.tsx";
 import About from "./pages/About.tsx";
 import NotFound from "./pages/NotFound.tsx";
-import { ContactModalProvider } from "./components/ContactModal";
+import { ContactModalProvider } from "@/components/ContactModal";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 

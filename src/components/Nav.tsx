@@ -2,7 +2,7 @@ import { Link, NavLink as RouterNavLink, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
-import { useContactModal } from "./ContactModal";
+import { useContactModal } from "@/components/ContactModal";
 
 const links = [
   { to: "/luciel", label: "Luciel" },
