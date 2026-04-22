@@ -29,10 +29,13 @@ import { toast } from "sonner";
    ============================================================ */
 
 const ACCESS_KEY = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY as string | undefined;
+const ACCESS_KEY_PLACEHOLDER = "PLACEHOLDER_PASTE_KEY_HERE";
 const ENDPOINT = "https://api.web3forms.com/submit";
 const RECIPIENT = "contact@vantagemind.ai";
-const THROTTLE_MS = 60_000;
+const THROTTLE_MS = 30_000;
 const STORAGE_KEY = "vm_contact_last_submit";
+
+let warnedMissingKey = false;
 
 type Ctx = { open: () => void; close: () => void };
 const ContactModalContext = createContext<Ctx | null>(null);
@@ -76,7 +79,7 @@ export const ContactModalProvider = ({ children }: { children: ReactNode }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Honeypot
+    // Honeypot — silent drop
     if (form.website.trim() !== "") {
       close();
       return;
@@ -88,16 +91,17 @@ export const ContactModalProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // Throttle
-    const last = Number(localStorage.getItem(STORAGE_KEY) || 0);
+    // Rate-limit (sessionStorage, 30s)
+    const last = Number(sessionStorage.getItem(STORAGE_KEY) || 0);
     if (Date.now() - last < THROTTLE_MS) {
-      toast.error("Please wait a moment before submitting again.");
+      const wait = Math.ceil((THROTTLE_MS - (Date.now() - last)) / 1000);
+      toast.error(`Please wait ${wait}s before submitting again.`);
       return;
     }
 
     setSubmitting(true);
 
-    const subject = `Pilot inquiry — ${form.firm} (${form.name})`;
+    const subject = `VantageMind AI — Design-partner pilot request from ${form.name}`;
     const messageBody =
       `Name: ${form.name}\n` +
       `Firm: ${form.firm}\n` +
@@ -106,8 +110,15 @@ export const ContactModalProvider = ({ children }: { children: ReactNode }) => {
       `How they heard about us: ${form.source || "—"}\n\n` +
       `Problem to solve:\n${form.problem}`;
 
-    if (!ACCESS_KEY) {
-      // Fallback: open user's mail client. Nothing drops silently.
+    const keyMissing = !ACCESS_KEY || ACCESS_KEY === ACCESS_KEY_PLACEHOLDER;
+
+    if (keyMissing) {
+      if (!warnedMissingKey) {
+        console.warn(
+          "[ContactModal] VITE_WEB3FORMS_ACCESS_KEY is missing or placeholder — falling back to mailto. Set it in .env.local to enable POST submission.",
+        );
+        warnedMissingKey = true;
+      }
       const mailto = `mailto:${RECIPIENT}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(messageBody)}`;
       window.location.href = mailto;
       toast.message("Opening your email client", {
@@ -124,26 +135,27 @@ export const ContactModalProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({
           access_key: ACCESS_KEY,
           subject,
-          from_name: "VantageMind website",
-          to: RECIPIENT,
+          from_name: "VantageMind AI Website",
           name: form.name,
           firm: form.firm,
           role: form.role,
           firm_size: form.firmSize,
           source: form.source,
           message: messageBody,
-          // Honeypot field forwarded for server-side bot filtering
-          botcheck: "",
+          botcheck: "", // honeypot — server-side filter
+          redirect: false,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) throw new Error(data.message || "Submission failed");
-      localStorage.setItem(STORAGE_KEY, String(Date.now()));
-      toast.success("Thank you. We will get back to you shortly.");
-      close();
+
+      sessionStorage.setItem(STORAGE_KEY, String(Date.now()));
+      toast.success("Thanks — we'll reply within 2 business days.");
+      setTimeout(() => close(), 3000);
     } catch (err) {
-      console.error(err);
-      toast.error("Something went wrong. Please email contact@vantagemind.ai directly.");
+      console.error("[ContactModal] submit failed", err);
+      sessionStorage.setItem(STORAGE_KEY, String(Date.now())); // throttle failures too
+      toast.error("Something went wrong. Please try again or email contact@vantagemind.ai.");
     } finally {
       setSubmitting(false);
     }
