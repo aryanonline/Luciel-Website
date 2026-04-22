@@ -8,7 +8,7 @@ const CONTACT_EMAIL = "contact@vantagemind.ai";
 export const Footer = () => (
   <footer className="border-t border-border">
     <div className="container-narrow py-16">
-      <div className="grid gap-12 md:grid-cols-5">
+      <div className="grid gap-12 md:grid-cols-4">
         <div className="md:col-span-2">
           <Logo />
           <p className="mt-4 max-w-sm text-sm text-muted-foreground">
@@ -50,14 +50,6 @@ export const Footer = () => (
           </ul>
         </div>
 
-        <div>
-          <div className="eyebrow mb-4">Legal</div>
-          <ul className="space-y-3 text-sm text-muted-foreground">
-            <li><span className="cursor-not-allowed opacity-60">Privacy</span></li>
-            <li><span className="cursor-not-allowed opacity-60">Terms</span></li>
-            <li><span className="cursor-not-allowed opacity-60">PIPEDA Statement</span></li>
-          </ul>
-        </div>
       </div>
 
       <div className="mt-12 border-t border-border pt-6 text-xs text-muted-foreground">
