@@ -124,7 +124,14 @@ export const ContactModalProvider = ({ children }: { children: ReactNode }) => {
         );
         warnedMissingKey = true;
       }
-      const mailto = `mailto:${RECIPIENT}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(messageBody)}`;
+      const mailtoBody =
+        `Name: ${form.name}\n` +
+        `Email: ${form.email}\n` +
+        `Company: ${form.company}\n` +
+        `Role: ${form.role}\n\n` +
+        `What they'd judge with Luciel:\n${form.use_case}\n\n` +
+        `Anything else:\n${form.message || "—"}`;
+      const mailto = `mailto:${RECIPIENT}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(mailtoBody)}`;
       window.location.href = mailto;
       toast.message("Opening your email client", {
         description: "Form delivery is not yet configured. Your message is pre-filled.",
