@@ -115,7 +115,7 @@ export const ContactModalProvider = ({ children }: { children: ReactNode }) => {
 
     const subject = `VantageMind AI — Design-partner pilot request from ${form.name}`;
 
-    const keyMissing = !ACCESS_KEY || ACCESS_KEY === ACCESS_KEY_PLACEHOLDER;
+    const keyMissing = false;
 
     if (keyMissing) {
       if (!warnedMissingKey) {
