@@ -49,7 +49,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/privacy" element={<Privacy />} />
             {/* Legacy redirects */}
-            <Route path="/luciel" element={<Navigate to="/products/luciel" replace />} />
+            <Route path="/luciel" element={<Luciel />} />
             <Route path="/products" element={<Navigate to="/products/luciel" replace />} />
             <Route path="/contact" element={<Navigate to="/" replace />} />
             <Route path="/how-it-works" element={<Navigate to="/products/luciel#how-it-works" replace />} />
