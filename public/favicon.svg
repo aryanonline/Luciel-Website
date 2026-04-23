@@ -1,22 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#7C5CFF" stop-opacity="0.55"/>
-      <stop offset="55%" stop-color="#7C5CFF" stop-opacity="0"/>
+    <radialGradient id="orb" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#B794FF"/>
+      <stop offset="55%" stop-color="#7B5CFF"/>
+      <stop offset="100%" stop-color="#0A0F3D"/>
     </radialGradient>
-    <radialGradient id="core" cx="38%" cy="32%" r="70%">
-      <stop offset="0%" stop-color="#E9E2FF"/>
-      <stop offset="22%" stop-color="#B7A6FF"/>
-      <stop offset="55%" stop-color="#7C5CFF"/>
-      <stop offset="100%" stop-color="#1A1140"/>
-    </radialGradient>
-    <radialGradient id="hi" cx="35%" cy="28%" r="22%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="40%" stop-color="#7B5CFF" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#7B5CFF" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="#0A0A0F"/>
-  <circle cx="32" cy="32" r="28" fill="url(#halo)"/>
-  <circle cx="32" cy="32" r="20" fill="url(#core)"/>
-  <circle cx="26" cy="24" r="6" fill="url(#hi)"/>
+  <circle cx="32" cy="32" r="30" fill="url(#glow)"/>
+  <circle cx="32" cy="32" r="22" fill="url(#orb)"/>
 </svg>
