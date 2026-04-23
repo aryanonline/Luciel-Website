@@ -19,10 +19,10 @@ import { toast } from "sonner";
    - Client-side sessionStorage throttle: 1 submission / 30s.
    ============================================================ */
 
-const ACCESS_KEY = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY as string | undefined;
+const ACCESS_KEY = "aa0bfe54-620b-46d4-967b-a7b0521b81d5";
 const ACCESS_KEY_PLACEHOLDER = "PLACEHOLDER_PASTE_KEY_HERE";
 const ENDPOINT = "https://api.web3forms.com/submit";
-const RECIPIENT = "privacy@vantagemind.ai";
+const RECIPIENT = "contact@vantagemind.ai";
 const THROTTLE_MS = 30_000;
 const STORAGE_KEY = "vm_contact_last_submit";
 
@@ -115,7 +115,7 @@ export const ContactModalProvider = ({ children }: { children: ReactNode }) => {
 
     const subject = `VantageMind AI — Design-partner pilot request from ${form.name}`;
 
-    const keyMissing = !ACCESS_KEY || ACCESS_KEY === ACCESS_KEY_PLACEHOLDER;
+    const keyMissing = false;
 
     if (keyMissing) {
       if (!warnedMissingKey) {
@@ -167,7 +167,7 @@ export const ContactModalProvider = ({ children }: { children: ReactNode }) => {
     } catch (err) {
       console.error("[ContactModal] submit failed", err);
       sessionStorage.setItem(STORAGE_KEY, String(Date.now())); // throttle failures too
-      toast.error("Something went wrong. Please try again or email privacy@vantagemind.ai.");
+      toast.error("Something went wrong. Please try again or email contact@vantagemind.ai.");
     } finally {
       setSubmitting(false);
     }

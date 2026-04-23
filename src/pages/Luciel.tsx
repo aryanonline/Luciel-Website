@@ -137,7 +137,7 @@ const Luciel = () => {
             <div>
               <div className="text-[11px] font-medium uppercase tracking-[0.22em] text-primary">Current status</div>
               <p className="mt-2 text-foreground">
-                Live on production at api.vantagemind.ai. Onboarding 3–5 GTA brokerages as design partners.
+                Live on production infrastructure. Onboarding 3–5 GTA brokerages as design partners.
               </p>
             </div>
             <Button onClick={open}>Become a design partner</Button>
@@ -258,10 +258,10 @@ const Luciel = () => {
         <FadeIn className="container-narrow">
           <SectionHeading eyebrow="CURRENT STATUS" title="Live, and onboarding design partners." />
           <p className="mt-8 max-w-3xl text-muted-foreground">
-            Luciel is live on production at{" "}
-            <span className="text-foreground">api.vantagemind.ai</span>. We are currently onboarding
-            3–5 GTA brokerages as design partners before public launch. Design partners get founding
-            pricing, direct access to the founder, and a real say in the product roadmap.
+            Luciel is <span className="text-foreground">live on production infrastructure</span>. We
+            are currently onboarding 3–5 GTA brokerages as design partners before public launch.
+            Design partners get founding pricing, direct access to the founder, and a real say in
+            the product roadmap.
           </p>
         </FadeIn>
       </section>
