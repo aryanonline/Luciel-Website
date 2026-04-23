@@ -8,7 +8,7 @@ const policy = [
   ["Why we collect it", "To deliver, secure, and improve our products. We do not sell personal information and we do not use customer content to train third-party foundation models."],
   ["Where it lives", "AWS ca-central-1 (Canada). TLS 1.3 in transit. Encrypted at rest via AWS KMS. No multi-region replication that crosses the border."],
   ["How long we keep it", "Per-tenant retention policies, configurable on contract. Deletions are recorded in an immutable, append-only deletion log so we can prove what was removed and when."],
-  ["Access, correction, and deletion", "Individuals may request access to, correction of, or deletion of their personal information through the Privacy Officer. Verified requests are actioned within 30 days."],
+  ["Access, correction, and deletion", "Individuals may request access to, correction of, or deletion of their personal information by contacting our Privacy Team at privacy@vantagemind.ai. Verified requests are actioned within 30 days."],
   ["Breach notification", "In the event of a breach involving real risk of significant harm, we notify affected individuals and the Office of the Privacy Commissioner of Canada as soon as feasible, per PIPEDA."],
   ["Third parties", "AWS ca-central-1 for hosting and storage. OpenAI and Anthropic for inference. Inference providers do not retain raw customer data and are not used for model training on your content."],
 ];
