@@ -9,6 +9,7 @@ import Luciel from "./pages/Luciel.tsx";
 import Doctrine from "./pages/Doctrine.tsx";
 import Security from "./pages/Security.tsx";
 import About from "./pages/About.tsx";
+import Privacy from "./pages/Privacy.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { ContactModalProvider } from "@/components/ContactModal";
 import { useEffect } from "react";
@@ -42,14 +43,17 @@ const App = () => (
           <ContactModalProvider>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/luciel" element={<Luciel />} />
+            <Route path="/products/luciel" element={<Luciel />} />
             <Route path="/doctrine" element={<Doctrine />} />
             <Route path="/security" element={<Security />} />
             <Route path="/about" element={<About />} />
+            <Route path="/privacy" element={<Privacy />} />
             {/* Legacy redirects */}
+            <Route path="/luciel" element={<Navigate to="/products/luciel" replace />} />
+            <Route path="/products" element={<Navigate to="/products/luciel" replace />} />
             <Route path="/contact" element={<Navigate to="/" replace />} />
-            <Route path="/how-it-works" element={<Navigate to="/luciel#how-it-works" replace />} />
-            <Route path="/pricing" element={<Navigate to="/" replace />} />
+            <Route path="/how-it-works" element={<Navigate to="/products/luciel#how-it-works" replace />} />
+            <Route path="/pricing" element={<Navigate to="/products/luciel#pricing" replace />} />
             <Route path="/checkout" element={<Navigate to="/" replace />} />
             <Route path="/careers" element={<Navigate to="/about" replace />} />
             <Route path="/careers/apply" element={<Navigate to="/about" replace />} />

@@ -1,14 +1,20 @@
 import { Link, NavLink as RouterNavLink, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { useContactModal } from "@/components/ContactModal";
 
-const links = [
-  { to: "/luciel", label: "Luciel" },
-  { to: "/doctrine", label: "Doctrine" },
-  { to: "/security", label: "Security" },
-  { to: "/about", label: "About" },
+type NavLink =
+  | { kind: "link"; to: string; label: string }
+  | { kind: "products"; label: string }
+  | { kind: "contact"; label: string };
+
+const links: NavLink[] = [
+  { kind: "link", to: "/", label: "Home" },
+  { kind: "products", label: "Products" },
+  { kind: "link", to: "/about", label: "About" },
+  { kind: "link", to: "/privacy", label: "Privacy & Trust" },
+  { kind: "contact", label: "Contact" },
 ];
 
 export const Logo = ({ className = "" }: { className?: string }) => (
@@ -27,6 +33,53 @@ export const Logo = ({ className = "" }: { className?: string }) => (
     </span>
   </Link>
 );
+
+const ProductsDropdown = () => {
+  const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
+  const isActive = pathname.startsWith("/products");
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-products-dropdown]")) setOpen(false);
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, [open]);
+
+  return (
+    <div className="relative" data-products-dropdown>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={`flex items-center gap-1 text-sm transition-colors ${
+          isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+        }`}
+        aria-haspopup="true"
+        aria-expanded={open}
+      >
+        Products <ChevronDown size={14} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-3 w-64 rounded-xl border border-border bg-card p-2 shadow-lg">
+          <Link
+            to="/products/luciel"
+            onClick={() => setOpen(false)}
+            className="block rounded-lg px-3 py-2.5 text-sm text-foreground hover:bg-secondary"
+          >
+            <div className="font-medium">Luciel</div>
+            <div className="text-xs text-muted-foreground">AI assistant for real estate brokerages</div>
+          </Link>
+          <div className="block rounded-lg px-3 py-2.5 text-sm text-muted-foreground">
+            <div className="font-medium">More coming soon</div>
+            <div className="text-xs">Legal · Mortgage · Property management</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const Nav = () => {
   const [open, setOpen] = useState(false);
@@ -53,23 +106,37 @@ export const Nav = () => {
         <Logo />
 
         <nav className="hidden items-center gap-8 lg:flex">
-          {links.map((l) => (
-            <RouterNavLink
-              key={l.to}
-              to={l.to}
-              className={({ isActive }) =>
-                `text-sm transition-colors ${
-                  isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`
-              }
-            >
-              {l.label}
-            </RouterNavLink>
-          ))}
+          {links.map((l) => {
+            if (l.kind === "products") return <ProductsDropdown key="products" />;
+            if (l.kind === "contact")
+              return (
+                <button
+                  key="contact"
+                  onClick={openContact}
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {l.label}
+                </button>
+              );
+            return (
+              <RouterNavLink
+                key={l.to}
+                to={l.to}
+                end={l.to === "/"}
+                className={({ isActive }) =>
+                  `text-sm transition-colors ${
+                    isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`
+                }
+              >
+                {l.label}
+              </RouterNavLink>
+            );
+          })}
         </nav>
 
         <div className="hidden items-center gap-2 lg:flex">
-          <Button size="sm" onClick={openContact}>Request pilot</Button>
+          <Button size="sm" onClick={openContact}>Book a demo</Button>
         </div>
 
         <button
@@ -85,18 +152,21 @@ export const Nav = () => {
       {open && (
         <div className="border-t border-border bg-background lg:hidden">
           <div className="container-narrow flex flex-col gap-1 py-4">
-            {links.map((l) => (
-              <Link
-                key={l.to}
-                to={l.to}
-                className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"
-              >
-                {l.label}
-              </Link>
-            ))}
+            <Link to="/" className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">Home</Link>
+            <div className="px-2 pt-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Products</div>
+            <Link to="/products/luciel" className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">Luciel</Link>
+            <div className="rounded-md px-2 py-2 text-sm text-muted-foreground/60">More coming soon</div>
+            <Link to="/about" className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">About</Link>
+            <Link to="/privacy" className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">Privacy & Trust</Link>
+            <button
+              onClick={() => { setOpen(false); openContact(); }}
+              className="rounded-md px-2 py-2 text-left text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              Contact
+            </button>
             <div className="mt-3">
               <Button size="sm" className="w-full" onClick={() => { setOpen(false); openContact(); }}>
-                Request pilot
+                Book a demo
               </Button>
             </div>
           </div>
