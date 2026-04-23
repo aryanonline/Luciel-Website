@@ -54,9 +54,9 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Column 4 — Privacy Officer */}
+          {/* Column 4 — Privacy Team */}
           <div>
-            <div className="eyebrow mb-4">Privacy Officer</div>
+            <div className="eyebrow mb-4">Privacy Team</div>
             <a
               href={`mailto:${PRIVACY_EMAIL}`}
               className="text-sm text-muted-foreground hover:text-foreground"

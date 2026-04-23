@@ -14,16 +14,16 @@ const policy = [
 ];
 
 const principles = [
-  ["1. Accountability", "Aryan Singh, Privacy Officer, is accountable for VantageMind AI's compliance with PIPEDA. Privacy responsibilities are documented and reviewed."],
+  ["1. Accountability", "VantageMind AI's Privacy Team is accountable for our compliance with PIPEDA. Privacy responsibilities are documented and reviewed, and inquiries are handled at privacy@vantagemind.ai."],
   ["2. Identifying purposes", "Purposes for collecting personal information are identified at or before collection, in product onboarding and in this policy."],
   ["3. Consent", "Consent is meaningful, per-purpose, timestamped, and withdrawable. Memory features are opt-in and consent-gated at the runtime layer."],
   ["4. Limiting collection", "We collect only what is necessary to deliver the contracted service. No silent enrichment from third-party data brokers."],
   ["5. Limiting use, disclosure, and retention", "Personal information is used only for the purposes consented to, disclosed only to processors necessary to deliver the service, and retained only as long as needed under per-tenant retention policies."],
-  ["6. Accuracy", "Customers can correct personal information through the product or through the Privacy Officer. Source-of-truth records are versioned."],
+  ["6. Accuracy", "Customers can correct personal information through the product or by contacting our Privacy Team. Source-of-truth records are versioned."],
   ["7. Safeguards", "Per-tenant isolation, scope-enforced API permissions, scoped API keys SHA-256 hashed (raw keys never logged), TLS 1.3 with post-quantum key exchange, AWS KMS encryption at rest, immutable admin audit log."],
-  ["8. Openness", "This page documents our practices. The Privacy Officer is reachable at privacy@vantagemind.ai for any clarifying questions."],
+  ["8. Openness", "This page documents our practices. Our Privacy Team is reachable at privacy@vantagemind.ai for any clarifying questions."],
   ["9. Individual access", "On verified request, individuals receive an account of their personal information held, how it has been used, and to whom it has been disclosed."],
-  ["10. Challenging compliance", "Concerns about our compliance can be addressed to the Privacy Officer. Unresolved concerns may be escalated to the Office of the Privacy Commissioner of Canada."],
+  ["10. Challenging compliance", "Concerns about our compliance can be addressed to our Privacy Team at privacy@vantagemind.ai. Unresolved concerns may be escalated to the Office of the Privacy Commissioner of Canada."],
 ];
 
 const security = [
@@ -60,13 +60,15 @@ const Privacy = () => (
       </div>
     </section>
 
-    {/* Privacy Officer */}
+    {/* Privacy Team */}
     <section className="section border-t border-border">
       <FadeIn className="container-narrow">
-        <SectionHeading eyebrow="PRIVACY OFFICER" title="One named person, accountable." />
+        <SectionHeading eyebrow="PRIVACY TEAM" title="Contact our Privacy Team." />
         <div className="mt-10 max-w-2xl rounded-xl border border-border bg-card p-7">
-          <div className="font-display text-2xl text-foreground">Aryan Singh</div>
-          <div className="mt-1 text-sm uppercase tracking-[0.18em] text-muted-foreground">Privacy Officer</div>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            For all privacy inquiries, access requests, corrections, deletions, or breach
+            notifications, please contact:
+          </p>
           <div className="mt-5 space-y-1 text-sm text-muted-foreground">
             <div><a href="mailto:privacy@vantagemind.ai" className="text-primary hover:text-primary/80">privacy@vantagemind.ai</a></div>
             <div>VantageMind AI</div>
