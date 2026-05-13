@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
+Disallow: /account
+Disallow: /account/billing
+Disallow: /onboarding
+Disallow: /signup
 
-Sitemap: https://vantagemind.ai/sitemap.xml
+Sitemap: https://lucid-judgment-layer.lovable.app/sitemap.xml
