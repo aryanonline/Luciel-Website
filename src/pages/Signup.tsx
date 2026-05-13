@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { SiteLayout } from "@/components/SiteLayout";
 import { Seo } from "@/components/Seo";
 import { Eyebrow } from "@/components/Section";
@@ -11,6 +11,7 @@ import { isEmail, submitWaitlist } from "@/lib/submissions";
 import { track } from "@/lib/analytics";
 import {
   BillingApiError,
+  BillingCadence,
   createCheckoutSession,
   isBillingEnabled,
 } from "@/lib/billing";
@@ -18,19 +19,25 @@ import {
 type Tier = "individual" | "team" | "company" | "unspecified";
 
 /**
- * Signup — Step 30a email-capture step.
+ * Signup — email-capture step.
  *
- * Individual tier (the only self-serve tier in v1) → POST /api/v1/billing/checkout
- * and forward to Stripe-hosted Checkout.
+ * Step 30a (v1): only Individual was self-serve on Stripe.
+ * Step 30a.1: Individual + Team are both self-serve. Company keeps a
+ * "Book a demo" primary CTA on /pricing but qualified leads can be sent
+ * here via `?showSkip=1` on /pricing — if a Company tier hits /signup
+ * directly we still forward to checkout (the backend's 422 / contact
+ * redirect is no longer needed because Company is fully self-serve).
  *
- * Team / Company / Unspecified → keep the waitlist UX. They are sales-assisted
- * in v1 (drift: D-billing-team-company-not-self-serve-2026-05-13).
+ * Cadence: ?cadence=monthly|annual is forwarded to
+ * POST /api/v1/billing/checkout so the backend resolves the right Stripe
+ * Price. Missing / invalid cadence falls back to "monthly".
  *
  * If VITE_STRIPE_PUBLISHABLE_KEY is unset on this build, every tier falls
  * back to waitlist so the page never dead-ends.
  */
 const Signup = () => {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const tierParam = params.get("tier");
   const tier: Tier = (["individual", "team", "company"] as const).includes(
     tierParam as "individual" | "team" | "company",
@@ -38,9 +45,17 @@ const Signup = () => {
     ? (tierParam as Tier)
     : "unspecified";
 
-  // Step 30a v1: only Individual is self-serve on Stripe. Other tiers stay
-  // on the waitlist path even when billing is configured.
-  const checkoutEnabled = isBillingEnabled() && tier === "individual";
+  // Step 30a.1 — cadence pass-through (defaults to monthly).
+  const cadenceParam = params.get("cadence");
+  const cadence: BillingCadence =
+    cadenceParam === "annual" ? "annual" : "monthly";
+
+  // Step 30a.1: all three tiers are self-serve on Stripe. Unspecified
+  // still falls through to waitlist (e.g. someone hits /signup with no
+  // ?tier= query param at all).
+  const checkoutEnabled =
+    isBillingEnabled() &&
+    (tier === "individual" || tier === "team" || tier === "company");
 
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -52,9 +67,9 @@ const Signup = () => {
   useEffect(() => {
     track({
       name: "signup_started",
-      payload: { tier, mode: checkoutEnabled ? "checkout" : "waitlist" },
+      payload: { tier, cadence, mode: checkoutEnabled ? "checkout" : "waitlist" },
     });
-  }, [tier, checkoutEnabled]);
+  }, [tier, cadence, checkoutEnabled]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,10 +90,12 @@ const Signup = () => {
         const { checkout_url } = await createCheckoutSession({
           email: email.trim(),
           display_name: trimmedName,
-          tier: "individual",
+          // tier is one of "individual" | "team" | "company" here — checkoutEnabled gates that.
+          tier: tier as "individual" | "team" | "company",
+          billing_cadence: cadence,
           source_page: "/signup",
         });
-        track({ name: "checkout_session_created", payload: { tier } });
+        track({ name: "checkout_session_created", payload: { tier, cadence } });
         // Hand off to Stripe-hosted Checkout. Backend has already minted
         // the audit row; we should never return from this call.
         window.location.assign(checkout_url);
@@ -86,6 +103,19 @@ const Signup = () => {
       } catch (err) {
         setSubmitting(false);
         const isApi = err instanceof BillingApiError;
+        // Step 30a.1: if the backend rejects a self-serve attempt for
+        // any reason that requires a human (e.g. enterprise procurement
+        // policy), it returns 422 with detail="contact_sales". Route the
+        // customer to /contact so they don't dead-end.
+        if (
+          isApi &&
+          err.status === 422 &&
+          typeof err.message === "string" &&
+          err.message.toLowerCase().includes("contact")
+        ) {
+          navigate(`/contact?tier=${tier}&from=signup`);
+          return;
+        }
         const message = isApi
           ? err.message
           : "We couldn't reach billing. Try again, or email hello@vantagemind.ai.";
@@ -111,20 +141,32 @@ const Signup = () => {
     }
   };
 
+  // Step 30a.1 — trial copy by tier (matches BillingService.resolve_trial_days)
+  const trialDays = tier === "individual" ? 14 : 7;
+  const isAnnual = cadence === "annual";
+  const seoTitle = checkoutEnabled
+    ? isAnnual
+      ? "Start your annual plan — VantageMind AI"
+      : "Start your trial — VantageMind AI"
+    : "Sign up — VantageMind AI";
+  const seoDesc = checkoutEnabled
+    ? isAnnual
+      ? `Start an annual plan for Luciel ${tier}. Cancel anytime, no commitment.`
+      : `Start a ${trialDays}-day free trial of Luciel ${tier}. Cancel anytime, no commitment.`
+    : "Self-serve sign-up for Luciel is opening soon. Drop your email and we'll let you know the moment it goes live.";
+
   return (
     <SiteLayout>
-      <Seo
-        title={checkoutEnabled ? "Start your trial — VantageMind AI" : "Sign up — VantageMind AI"}
-        description={
-          checkoutEnabled
-            ? "Start a 14-day free trial of Luciel Individual. Cancel anytime, no commitment."
-            : "Self-serve sign-up for Luciel is opening soon. Drop your email and we'll let you know the moment it goes live."
-        }
-        path="/signup"
-      />
+      <Seo title={seoTitle} description={seoDesc} path="/signup" />
       <section className="border-b border-border">
         <div className="container-narrow pt-28 pb-20 md:pt-40 md:pb-28">
-          <Eyebrow>{checkoutEnabled ? "START YOUR TRIAL" : "SIGN UP"}</Eyebrow>
+          <Eyebrow>
+            {checkoutEnabled
+              ? isAnnual
+                ? "START YOUR PLAN"
+                : "START YOUR TRIAL"
+              : "SIGN UP"}
+          </Eyebrow>
           {tier !== "unspecified" && (
             <div className="mt-5">
               <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-primary">
@@ -134,23 +176,35 @@ const Signup = () => {
           )}
           <h1 className="font-display mt-6 max-w-3xl text-5xl leading-[1.05] tracking-tight md:text-7xl">
             {checkoutEnabled ? (
-              <>14 days free.<br />Cancel anytime.</>
+              isAnnual ? (
+                <>Annual plan.<br />One bill a year.</>
+              ) : (
+                <>{trialDays} days free.<br />Cancel anytime.</>
+              )
             ) : (
               <>Sign-up is opening soon.</>
             )}
           </h1>
           <p className="mt-7 max-w-2xl text-lg leading-relaxed text-muted-foreground">
             {checkoutEnabled ? (
-              <>
-                Drop your email and we'll send you straight to checkout. Your card isn't
-                charged until day 15, and your private Luciel deployment is provisioned the
-                moment payment confirms.
-              </>
+              isAnnual ? (
+                <>
+                  Drop your email and we'll send you straight to checkout. Annual plans are
+                  billed up front at ten times the monthly rate — effectively two months free —
+                  with no trial. Your private Luciel deployment is provisioned the moment
+                  payment confirms.
+                </>
+              ) : (
+                <>
+                  Drop your email and we'll send you straight to checkout. Your card isn't
+                  charged until day {trialDays + 1}, and your private Luciel deployment is
+                  provisioned the moment payment confirms.
+                </>
+              )
             ) : (
               <>
-                We're finishing the self-serve checkout for the Individual tier. Drop your
-                email and we'll let you know the moment it's live. Team and Company tiers are
-                sales-assisted today — book a demo and we'll get you set up.
+                Drop your email and we'll let you know the moment self-serve sign-up is live
+                for your tier. If you want to talk to us in the meantime, book a demo.
               </>
             )}
           </p>
