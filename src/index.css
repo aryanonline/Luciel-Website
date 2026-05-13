@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -11,36 +11,41 @@
        --accent-from #7B5CFF · --accent-to #B794FF
        --body #E8E8F0 · --muted #8A8AA0 */
 
-    --background: 240 30% 6%;            /* #0A0A14 */
-    --foreground: 240 14% 92%;           /* #E8E8F0 */
+    /* Neutral charcoal base — restrained, B2B, calm.
+       Purple persists as a single accent token, used sparingly. */
+    --background: 222 18% 6%;            /* near-black charcoal */
+    --foreground: 220 14% 94%;
 
-    --card: 240 22% 9%;                  /* #12121C */
-    --card-foreground: 240 14% 92%;
+    --card: 222 14% 9%;
+    --card-foreground: 220 14% 94%;
 
-    --popover: 240 22% 9%;
-    --popover-foreground: 240 14% 92%;
+    --popover: 222 14% 9%;
+    --popover-foreground: 220 14% 94%;
 
-    --primary: 252 100% 68%;             /* #7B5CFF */
-    --primary-foreground: 240 30% 6%;
+    --primary: 250 78% 70%;              /* restrained violet */
+    --primary-foreground: 222 18% 6%;
 
-    --accent-from: 252 100% 68%;         /* #7B5CFF */
-    --accent-to: 263 100% 79%;           /* #B794FF */
+    --accent-from: 250 78% 70%;
+    --accent-to: 260 80% 80%;
 
-    --secondary: 240 18% 12%;
-    --secondary-foreground: 240 14% 92%;
+    --secondary: 222 12% 12%;
+    --secondary-foreground: 220 14% 94%;
 
-    --muted: 240 18% 12%;
-    --muted-foreground: 240 10% 60%;     /* #8A8AA0 */
+    --muted: 222 12% 12%;
+    --muted-foreground: 220 9% 62%;
 
-    --accent: 240 18% 14%;
-    --accent-foreground: 240 14% 92%;
+    --accent: 222 12% 14%;
+    --accent-foreground: 220 14% 94%;
 
-    --destructive: 0 72% 55%;
-    --destructive-foreground: 240 14% 92%;
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 220 14% 94%;
 
-    --border: 240 22% 15%;               /* #1F1F2E */
-    --input: 240 22% 15%;
-    --ring: 252 100% 68%;
+    --border: 222 10% 16%;
+    --input: 222 10% 16%;
+    --ring: 250 78% 70%;
+
+    --surface-elevated: 222 14% 11%;
+    --hairline-strong: 222 10% 22%;
 
     --radius: 0.75rem;
 
@@ -55,23 +60,23 @@
   }
 
   .dark {
-    --background: 240 30% 6%;
-    --foreground: 240 14% 92%;
-    --card: 240 22% 9%;
-    --card-foreground: 240 14% 92%;
-    --popover: 240 22% 9%;
-    --popover-foreground: 240 14% 92%;
-    --primary: 252 100% 68%;
-    --primary-foreground: 240 30% 6%;
-    --secondary: 240 18% 12%;
-    --secondary-foreground: 240 14% 92%;
-    --muted: 240 18% 12%;
-    --muted-foreground: 240 10% 60%;
-    --accent: 240 18% 14%;
-    --accent-foreground: 240 14% 92%;
-    --border: 240 22% 15%;
-    --input: 240 22% 15%;
-    --ring: 252 100% 68%;
+    --background: 222 18% 6%;
+    --foreground: 220 14% 94%;
+    --card: 222 14% 9%;
+    --card-foreground: 220 14% 94%;
+    --popover: 222 14% 9%;
+    --popover-foreground: 220 14% 94%;
+    --primary: 250 78% 70%;
+    --primary-foreground: 222 18% 6%;
+    --secondary: 222 12% 12%;
+    --secondary-foreground: 220 14% 94%;
+    --muted: 222 12% 12%;
+    --muted-foreground: 220 9% 62%;
+    --accent: 222 12% 14%;
+    --accent-foreground: 220 14% 94%;
+    --border: 222 10% 16%;
+    --input: 222 10% 16%;
+    --ring: 250 78% 70%;
   }
 }
 
