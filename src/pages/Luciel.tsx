@@ -215,6 +215,28 @@ const Luciel = () => {
         </FadeIn>
       </section>
 
+      {/* RECOMMENDATION SHAPE */}
+      <section className="border-b border-border">
+        <FadeIn className="container-narrow py-24 md:py-32">
+          <Eyebrow>Anatomy of a recommendation</Eyebrow>
+          <h2 className="font-display mt-5 max-w-3xl text-4xl leading-[1.05] tracking-tight md:text-5xl">
+            How a recommendation looks.
+          </h2>
+          <p className="mt-6 max-w-2xl text-muted-foreground">
+            Every Luciel recommendation, in any domain, follows the same four-part shape.
+          </p>
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {recommendationShape.map((c) => (
+              <div key={c.title} className="rounded-xl border border-border bg-card p-6">
+                <div className="eyebrow text-primary">{c.eyebrow}</div>
+                <h3 className="font-display mt-3 text-xl tracking-tight text-foreground">{c.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{c.body}</p>
+              </div>
+            ))}
+          </div>
+        </FadeIn>
+      </section>
+
       {/* FIRST VERTICAL */}
       <section className="border-b border-border bg-card/40">
         <FadeIn className="container-narrow grid gap-12 py-20 md:grid-cols-[0.9fr_1.3fr] md:py-28 md:gap-16">
