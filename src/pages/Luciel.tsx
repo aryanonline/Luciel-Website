@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, User, Users, Building2 } from "lucide-react";
 import { Seo } from "@/components/Seo";
@@ -6,7 +7,18 @@ import { Eyebrow } from "@/components/Section";
 import { Button } from "@/components/ui/button";
 import { LucielOrb } from "@/components/LucielOrb";
 import { FadeIn } from "@/components/FadeIn";
-import { useContactModal } from "@/components/ContactModal";
+import { trackCta } from "@/lib/analytics";
+
+const env = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
+const LUCIEL_EMBED_KEY = env.VITE_LUCIEL_MARKETING_EMBED_KEY;
+const LUCIEL_WIDGET_SRC = "https://d1t84i96t71fsi.cloudfront.net/widget.js";
+
+const recommendationShape: { eyebrow: string; title: string; body: string }[] = [
+  { eyebrow: "1", title: "What suits you best", body: "The recommendation itself, stated plainly." },
+  { eyebrow: "2", title: "Why it fits you", body: "The reasoning, grounded in what we know about your situation." },
+  { eyebrow: "3", title: "The tradeoff", body: "What you give up by choosing this. Never hidden." },
+  { eyebrow: "4", title: "What I still need to confirm", body: "The open question. Luciel names it rather than guessing past it." },
+];
 
 const trustReasons = [
   {
