@@ -1,85 +1,37 @@
 import { Link, NavLink as RouterNavLink, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useContactModal } from "@/components/ContactModal";
 
 type NavLink =
   | { kind: "link"; to: string; label: string }
-  | { kind: "products"; label: string }
   | { kind: "contact"; label: string };
 
 const links: NavLink[] = [
-  { kind: "link", to: "/", label: "Home" },
-  { kind: "products", label: "Products" },
-  { kind: "link", to: "/about", label: "About" },
-  { kind: "link", to: "/privacy", label: "Privacy & Trust" },
+  { kind: "link", to: "/products/luciel", label: "Luciel" },
+  { kind: "link", to: "/platform", label: "Platform" },
+  { kind: "link", to: "/trust", label: "Trust" },
+  { kind: "link", to: "/about", label: "Company" },
   { kind: "contact", label: "Contact" },
 ];
 
 export const Logo = ({ className = "" }: { className?: string }) => (
   <Link to="/" className={`flex items-center gap-2.5 ${className}`} aria-label="VantageMind AI home">
     <span
-      className="inline-block h-5 w-5 rounded-full"
+      className="inline-block h-[18px] w-[18px] rounded-full"
       style={{
         background:
-          "radial-gradient(circle at 35% 30%, hsl(var(--accent-to)) 0%, hsl(var(--accent-from)) 55%, hsl(232 70% 14%) 100%)",
-        boxShadow: "0 0 12px hsl(var(--accent-from) / 0.5)",
+          "radial-gradient(circle at 35% 30%, hsl(var(--accent-to)) 0%, hsl(var(--accent-from)) 55%, hsl(222 30% 10%) 100%)",
+        boxShadow: "0 0 10px hsl(var(--accent-from) / 0.35)",
       }}
       aria-hidden="true"
     />
-    <span className="font-display text-[18px] tracking-tight text-foreground">
+    <span className="font-display text-[19px] tracking-tight text-foreground">
       VantageMind <span className="text-muted-foreground">AI</span>
     </span>
   </Link>
 );
-
-const ProductsDropdown = () => {
-  const [open, setOpen] = useState(false);
-  const { pathname } = useLocation();
-  const isActive = pathname.startsWith("/products");
-
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest("[data-products-dropdown]")) setOpen(false);
-    };
-    document.addEventListener("click", onClick);
-    return () => document.removeEventListener("click", onClick);
-  }, [open]);
-
-  return (
-    <div className="relative" data-products-dropdown>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-1 text-sm transition-colors ${
-          isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-        }`}
-        aria-haspopup="true"
-        aria-expanded={open}
-      >
-        Products <ChevronDown size={14} />
-      </button>
-      {open && (
-        <div className="absolute left-0 top-full mt-3 w-64 rounded-xl border border-border bg-card p-2 shadow-lg">
-          <Link
-            to="/products/luciel"
-            onClick={() => setOpen(false)}
-            className="block rounded-lg px-3 py-2.5 text-sm text-foreground hover:bg-secondary"
-          >
-            <div className="font-medium">Luciel</div>
-            <div className="text-xs text-muted-foreground">AI assistant for real estate brokerages</div>
-          </Link>
-          <div className="block rounded-lg px-3 py-2.5 text-sm text-muted-foreground">
-            <div className="font-medium">More coming soon</div>
-            <div className="text-xs">Legal · Mortgage · Property management</div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 export const Nav = () => {
   const [open, setOpen] = useState(false);
@@ -105,9 +57,8 @@ export const Nav = () => {
       <div className="container-narrow flex h-16 items-center justify-between">
         <Logo />
 
-        <nav className="hidden items-center gap-8 lg:flex">
+        <nav className="hidden items-center gap-9 lg:flex">
           {links.map((l) => {
-            if (l.kind === "products") return <ProductsDropdown key="products" />;
             if (l.kind === "contact")
               return (
                 <button
@@ -153,11 +104,10 @@ export const Nav = () => {
         <div className="border-t border-border bg-background lg:hidden">
           <div className="container-narrow flex flex-col gap-1 py-4">
             <Link to="/" className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">Home</Link>
-            <div className="px-2 pt-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Products</div>
             <Link to="/products/luciel" className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">Luciel</Link>
-            <div className="rounded-md px-2 py-2 text-sm text-muted-foreground/60">More coming soon</div>
-            <Link to="/about" className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">About</Link>
-            <Link to="/privacy" className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">Privacy & Trust</Link>
+            <Link to="/platform" className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">Platform</Link>
+            <Link to="/trust" className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">Trust</Link>
+            <Link to="/about" className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">Company</Link>
             <button
               onClick={() => { setOpen(false); openContact(); }}
               className="rounded-md px-2 py-2 text-left text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"
