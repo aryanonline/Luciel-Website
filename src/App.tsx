@@ -6,6 +6,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import Luciel from "./pages/Luciel.tsx";
+import Platform from "./pages/Platform.tsx";
+import Trust from "./pages/Trust.tsx";
 import Doctrine from "./pages/Doctrine.tsx";
 import Security from "./pages/Security.tsx";
 import About from "./pages/About.tsx";
@@ -44,15 +46,17 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/products/luciel" element={<Luciel />} />
-            <Route path="/doctrine" element={<Doctrine />} />
-            <Route path="/security" element={<Security />} />
+            <Route path="/platform" element={<Platform />} />
+            <Route path="/trust" element={<Trust />} />
             <Route path="/about" element={<About />} />
+            <Route path="/doctrine" element={<Doctrine />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/security" element={<Navigate to="/trust" replace />} />
             {/* Legacy redirects */}
-            <Route path="/luciel" element={<Luciel />} />
+            <Route path="/luciel" element={<Navigate to="/products/luciel" replace />} />
             <Route path="/products" element={<Navigate to="/products/luciel" replace />} />
             <Route path="/contact" element={<Navigate to="/" replace />} />
-            <Route path="/how-it-works" element={<Navigate to="/products/luciel#how-it-works" replace />} />
+            <Route path="/how-it-works" element={<Navigate to="/platform" replace />} />
             <Route path="/pricing" element={<Navigate to="/products/luciel#pricing" replace />} />
             <Route path="/checkout" element={<Navigate to="/" replace />} />
             <Route path="/careers" element={<Navigate to="/about" replace />} />
