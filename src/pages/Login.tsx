@@ -56,7 +56,11 @@ const Login = () => {
         track({ name: "login_succeeded" });
         setState({ kind: "ok" });
         // Small delay so the success state flashes briefly before redirect.
-        setTimeout(() => navigate("/account/billing", { replace: true }), 400);
+        // Step 32: land cookied users on /dashboard (Sarah's journey), not
+        // /account/billing — they came here to build a Luciel, not to manage
+        // billing. Account/billing is reachable from the Dashboard's
+        // Account tab.
+        setTimeout(() => navigate("/dashboard", { replace: true }), 400);
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Sign-in failed. Please try again.";
