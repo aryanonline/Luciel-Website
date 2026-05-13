@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Linkedin } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { SiteLayout } from "@/components/SiteLayout";
