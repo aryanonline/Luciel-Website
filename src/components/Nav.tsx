@@ -2,18 +2,17 @@ import { Link, NavLink as RouterNavLink, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
-import { useContactModal } from "@/components/ContactModal";
+import { trackCta } from "@/lib/analytics";
 
-type NavLink =
-  | { kind: "link"; to: string; label: string }
-  | { kind: "contact"; label: string };
+type NavLink = { to: string; label: string };
 
 const links: NavLink[] = [
-  { kind: "link", to: "/products/luciel", label: "Luciel" },
-  { kind: "link", to: "/platform", label: "Platform" },
-  { kind: "link", to: "/trust", label: "Trust" },
-  { kind: "link", to: "/about", label: "Company" },
-  { kind: "contact", label: "Contact" },
+  { to: "/products/luciel", label: "Luciel" },
+  { to: "/platform", label: "Platform" },
+  { to: "/trust", label: "Trust" },
+  { to: "/pricing", label: "Pricing" },
+  { to: "/about", label: "Company" },
+  { to: "/contact", label: "Contact" },
 ];
 
 export const Logo = ({ className = "" }: { className?: string }) => (
@@ -37,7 +36,6 @@ export const Nav = () => {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { pathname } = useLocation();
-  const { open: openContact } = useContactModal();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -57,37 +55,27 @@ export const Nav = () => {
       <div className="container-narrow flex h-16 items-center justify-between">
         <Logo />
 
-        <nav className="hidden items-center gap-9 lg:flex">
-          {links.map((l) => {
-            if (l.kind === "contact")
-              return (
-                <button
-                  key="contact"
-                  onClick={openContact}
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  {l.label}
-                </button>
-              );
-            return (
-              <RouterNavLink
-                key={l.to}
-                to={l.to}
-                end={l.to === "/"}
-                className={({ isActive }) =>
-                  `text-sm transition-colors ${
-                    isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                  }`
-                }
-              >
-                {l.label}
-              </RouterNavLink>
-            );
-          })}
+        <nav className="hidden items-center gap-8 lg:flex">
+          {links.map((l) => (
+            <RouterNavLink
+              key={l.to}
+              to={l.to}
+              end={l.to === "/"}
+              className={({ isActive }) =>
+                `text-sm transition-colors ${
+                  isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`
+              }
+            >
+              {l.label}
+            </RouterNavLink>
+          ))}
         </nav>
 
         <div className="hidden items-center gap-2 lg:flex">
-          <Button size="sm" onClick={openContact}>Book a demo</Button>
+          <Button asChild size="sm">
+            <Link to="/contact" onClick={() => trackCta("Book a demo", pathname)}>Book a demo</Link>
+          </Button>
         </div>
 
         <button
@@ -104,19 +92,14 @@ export const Nav = () => {
         <div className="border-t border-border bg-background lg:hidden">
           <div className="container-narrow flex flex-col gap-1 py-4">
             <Link to="/" className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">Home</Link>
-            <Link to="/products/luciel" className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">Luciel</Link>
-            <Link to="/platform" className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">Platform</Link>
-            <Link to="/trust" className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">Trust</Link>
-            <Link to="/about" className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">Company</Link>
-            <button
-              onClick={() => { setOpen(false); openContact(); }}
-              className="rounded-md px-2 py-2 text-left text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"
-            >
-              Contact
-            </button>
+            {links.map((l) => (
+              <Link key={l.to} to={l.to} className="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">
+                {l.label}
+              </Link>
+            ))}
             <div className="mt-3">
-              <Button size="sm" className="w-full" onClick={() => { setOpen(false); openContact(); }}>
-                Book a demo
+              <Button asChild size="sm" className="w-full">
+                <Link to="/contact" onClick={() => trackCta("Book a demo", pathname)}>Book a demo</Link>
               </Button>
             </div>
           </div>

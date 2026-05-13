@@ -9,11 +9,18 @@ import Luciel from "./pages/Luciel.tsx";
 import Platform from "./pages/Platform.tsx";
 import Trust from "./pages/Trust.tsx";
 import Doctrine from "./pages/Doctrine.tsx";
-import Security from "./pages/Security.tsx";
 import About from "./pages/About.tsx";
 import Privacy from "./pages/Privacy.tsx";
+import Pricing from "./pages/Pricing.tsx";
+import Signup from "./pages/Signup.tsx";
+import Onboarding from "./pages/Onboarding.tsx";
+import Account from "./pages/Account.tsx";
+import LegalTerms from "./pages/LegalTerms.tsx";
+import LegalPrivacy from "./pages/LegalPrivacy.tsx";
+import Contact from "./pages/Contact.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { ContactModalProvider } from "@/components/ContactModal";
+import { WaitlistProvider } from "@/components/WaitlistModal";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -43,28 +50,36 @@ const App = () => (
         <BrowserRouter>
           <ScrollToTop />
           <ContactModalProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/products/luciel" element={<Luciel />} />
-            <Route path="/platform" element={<Platform />} />
-            <Route path="/trust" element={<Trust />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/doctrine" element={<Doctrine />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/security" element={<Navigate to="/trust" replace />} />
-            {/* Legacy redirects */}
-            <Route path="/luciel" element={<Navigate to="/products/luciel" replace />} />
-            <Route path="/products" element={<Navigate to="/products/luciel" replace />} />
-            <Route path="/contact" element={<Navigate to="/" replace />} />
-            <Route path="/how-it-works" element={<Navigate to="/platform" replace />} />
-            <Route path="/pricing" element={<Navigate to="/products/luciel#pricing" replace />} />
-            <Route path="/checkout" element={<Navigate to="/" replace />} />
-            <Route path="/careers" element={<Navigate to="/about" replace />} />
-            <Route path="/careers/apply" element={<Navigate to="/about" replace />} />
-            <Route path="/design-partners" element={<Navigate to="/" replace />} />
-            <Route path="/changelog" element={<Navigate to="/" replace />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+            <WaitlistProvider>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/products/luciel" element={<Luciel />} />
+                <Route path="/platform" element={<Platform />} />
+                <Route path="/trust" element={<Trust />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/doctrine" element={<Doctrine />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/account" element={<Account defaultTab="profile" />} />
+                <Route path="/account/billing" element={<Account defaultTab="billing" />} />
+                <Route path="/legal/terms" element={<LegalTerms />} />
+                <Route path="/legal/privacy" element={<LegalPrivacy />} />
+                <Route path="/security" element={<Navigate to="/trust" replace />} />
+                {/* Legacy redirects */}
+                <Route path="/luciel" element={<Navigate to="/products/luciel" replace />} />
+                <Route path="/products" element={<Navigate to="/products/luciel" replace />} />
+                <Route path="/how-it-works" element={<Navigate to="/platform" replace />} />
+                <Route path="/checkout" element={<Navigate to="/pricing" replace />} />
+                <Route path="/careers" element={<Navigate to="/about" replace />} />
+                <Route path="/careers/apply" element={<Navigate to="/about" replace />} />
+                <Route path="/design-partners" element={<Navigate to="/contact" replace />} />
+                <Route path="/changelog" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </WaitlistProvider>
           </ContactModalProvider>
         </BrowserRouter>
       </TooltipProvider>
