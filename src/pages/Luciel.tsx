@@ -49,7 +49,18 @@ const trustReasons = [
 ];
 
 const Luciel = () => {
-  const { open } = useContactModal();
+  // Inject the Luciel marketing widget once when the embed key is present.
+  useEffect(() => {
+    if (!LUCIEL_EMBED_KEY) return;
+    if (document.querySelector(`script[src="${LUCIEL_WIDGET_SRC}"]`)) return;
+    const s = document.createElement("script");
+    s.src = LUCIEL_WIDGET_SRC;
+    s.async = true;
+    s.setAttribute("data-luciel-api-base", "https://api.vantagemind.ai");
+    s.setAttribute("data-luciel-embed-key", LUCIEL_EMBED_KEY);
+    document.head.appendChild(s);
+  }, []);
+
   return (
     <SiteLayout>
       <Seo
@@ -74,7 +85,9 @@ const Luciel = () => {
             individual professional, a department, or your whole company.
           </p>
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-            <Button size="lg" onClick={open}>Book a demo</Button>
+            <Button asChild size="lg">
+              <Link to="/contact" onClick={() => trackCta("Book a demo", "/products/luciel")}>Book a demo</Link>
+            </Button>
             <Button asChild size="lg" variant="ghost">
               <Link to="/platform" className="inline-flex items-center gap-1.5">
                 See the platform <ArrowRight size={16} />
