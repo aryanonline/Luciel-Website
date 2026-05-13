@@ -15,6 +15,7 @@ import Pricing from "./pages/Pricing.tsx";
 import Signup from "./pages/Signup.tsx";
 import Onboarding from "./pages/Onboarding.tsx";
 import Account from "./pages/Account.tsx";
+import Login from "./pages/Login.tsx";
 import LegalTerms from "./pages/LegalTerms.tsx";
 import LegalPrivacy from "./pages/LegalPrivacy.tsx";
 import Contact from "./pages/Contact.tsx";
@@ -63,6 +64,7 @@ const App = () => (
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/login" element={<Login />} />
                 <Route path="/account" element={<Account defaultTab="profile" />} />
                 <Route path="/account/billing" element={<Account defaultTab="billing" />} />
                 <Route path="/legal/terms" element={<LegalTerms />} />

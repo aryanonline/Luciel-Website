@@ -25,12 +25,14 @@ const tiers: TierCard[] = [
   {
     id: "individual",
     label: "INDIVIDUAL",
-    price: "$30–80",
+    // Step 30a: locked single SKU at $30 CAD/mo for the Individual tier.
+    price: "$30",
     audience: "A single professional working on their own behalf.",
     bullets: [
       "One person's Luciels, configured for their own client work",
       "Private deployment, own scope, own audit trail",
       "Configurable per role and workflow",
+      "14-day free trial — cancel anytime",
     ],
     primary: "waitlist",
   },
@@ -147,13 +149,17 @@ const Pricing = () => {
                   <div className="mt-auto pt-8">
                     {t.primary === "waitlist" ? (
                       <>
+                        {/* Step 30a: Individual tier flips to mode="checkout" which
+                            routes to /signup → Stripe-hosted Checkout. When
+                            VITE_STRIPE_PUBLISHABLE_KEY is unset on a build the
+                            button transparently falls back to the waitlist modal. */}
                         <WaitlistButton
                           tier={t.id}
-                          mode="waitlist"
+                          mode="checkout"
                           className="w-full"
                           sourcePage="/pricing"
                         >
-                          Join the waitlist
+                          Start free trial
                         </WaitlistButton>
                         <Link
                           to={`/contact?tier=${t.id}`}
