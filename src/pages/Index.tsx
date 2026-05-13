@@ -6,10 +6,9 @@ import { Eyebrow } from "@/components/Section";
 import { Button } from "@/components/ui/button";
 import { LucielOrb } from "@/components/LucielOrb";
 import { FadeIn } from "@/components/FadeIn";
-import { useContactModal } from "@/components/ContactModal";
+import { trackCta } from "@/lib/analytics";
 
 const Index = () => {
-  const { open } = useContactModal();
 
   return (
     <SiteLayout>
@@ -24,19 +23,21 @@ const Index = () => {
         <div className="pointer-events-none absolute -right-40 top-10 -z-10 hidden opacity-60 md:block" aria-hidden="true">
           <LucielOrb size={520} echo />
         </div>
-        <div className="container-narrow grid min-h-[80vh] items-center gap-12 pt-28 pb-20 md:grid-cols-[1.2fr_1fr] md:pt-36 md:pb-28">
+        <div className="container-narrow grid items-center gap-10 pt-24 pb-16 md:grid-cols-[1.2fr_1fr] md:pt-32 md:pb-24">
           <div>
             <Eyebrow>VantageMind AI · Markham, Ontario</Eyebrow>
-            <h1 className="font-display mt-7 text-5xl leading-[1.02] tracking-tight md:text-[78px]">
+            <h1 className="font-display mt-6 text-5xl leading-[1.0] tracking-tight md:text-[68px]">
               AI judgment systems<br />for Canadian businesses.
             </h1>
-            <p className="mt-8 max-w-xl text-lg leading-relaxed text-muted-foreground">
+            <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
               VantageMind builds disciplined, model-agnostic AI that reasons inside your business —
               with a fixed identity, scoped access, and an audit trail. One intelligence,
               deployed across individuals, departments, and the whole company.
             </p>
-            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-              <Button size="lg" onClick={open}>Book a demo</Button>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg">
+                <Link to="/contact" onClick={() => trackCta("Book a demo", "/")}>Book a demo</Link>
+              </Button>
               <Button asChild size="lg" variant="ghost">
                 <Link to="/products/luciel" className="inline-flex items-center gap-1.5">
                   Explore Luciel <ArrowRight size={16} />
@@ -105,8 +106,8 @@ const Index = () => {
               <Button asChild size="lg">
                 <Link to="/products/luciel">Explore Luciel</Link>
               </Button>
-              <Button size="lg" variant="ghost" onClick={open}>
-                Book a demo
+              <Button asChild size="lg" variant="ghost">
+                <Link to="/contact" onClick={() => trackCta("Book a demo", "/")}>Book a demo</Link>
               </Button>
             </div>
           </FadeIn>
@@ -140,7 +141,7 @@ const Index = () => {
                 ["Memory", "Layered memory — company knowledge, departmental context, individual continuity — with consent and retention enforced at the runtime layer."],
                 ["Policy", "Business rules, escalation paths, and action approvals are first-class objects, not prompt suggestions."],
                 ["Dashboards", "Operators see what the system is doing, what it has touched, and what it has escalated — across every deployment."],
-                ["Channels", "One reasoning identity, available across chat, email, embedded surfaces, and integrations — without losing context between them."],
+                ["Channels", "Chat widget today. Voice, SMS, and email arriving with our next release — same scope policy, same memory, same audit trail."],
               ].map(([t, b]) => (
                 <div key={t} className="grid gap-4 py-7 md:grid-cols-[160px_1fr]">
                   <div className="font-display text-xl tracking-tight text-foreground">{t}</div>
@@ -224,7 +225,9 @@ const Index = () => {
             Demos take about thirty minutes.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button size="lg" onClick={open}>Book a demo</Button>
+            <Button asChild size="lg">
+              <Link to="/contact" onClick={() => trackCta("Book a demo", "/")}>Book a demo</Link>
+            </Button>
             <Button asChild size="lg" variant="ghost">
               <Link to="/products/luciel">Explore Luciel</Link>
             </Button>
