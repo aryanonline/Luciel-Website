@@ -266,7 +266,6 @@ const Luciel = () => {
             Talk to Luciel — embedded right here on this page.
           </p>
         )}
-        </div>
       </section>
     </SiteLayout>
   );
