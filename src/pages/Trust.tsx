@@ -4,7 +4,7 @@ import { SiteLayout } from "@/components/SiteLayout";
 import { Eyebrow } from "@/components/Section";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/FadeIn";
-import { useContactModal } from "@/components/ContactModal";
+
 
 const pillars = [
   {

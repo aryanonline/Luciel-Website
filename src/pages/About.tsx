@@ -4,7 +4,7 @@ import { SiteLayout } from "@/components/SiteLayout";
 import { Eyebrow, SectionHeading } from "@/components/Section";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/FadeIn";
-import { useContactModal } from "@/components/ContactModal";
+
 
 const LINKEDIN_URL = "https://www.linkedin.com/in/aryan-singh-726825109/";
 
