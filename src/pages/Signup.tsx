@@ -9,9 +9,26 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { isEmail, submitWaitlist } from "@/lib/submissions";
 import { track } from "@/lib/analytics";
+import {
+  BillingApiError,
+  createCheckoutSession,
+  isBillingEnabled,
+} from "@/lib/billing";
 
 type Tier = "individual" | "team" | "company" | "unspecified";
 
+/**
+ * Signup — Step 30a email-capture step.
+ *
+ * Individual tier (the only self-serve tier in v1) → POST /api/v1/billing/checkout
+ * and forward to Stripe-hosted Checkout.
+ *
+ * Team / Company / Unspecified → keep the waitlist UX. They are sales-assisted
+ * in v1 (drift: D-billing-team-company-not-self-serve-2026-05-13).
+ *
+ * If VITE_STRIPE_PUBLISHABLE_KEY is unset on this build, every tier falls
+ * back to waitlist so the page never dead-ends.
+ */
 const Signup = () => {
   const [params] = useSearchParams();
   const tierParam = params.get("tier");
@@ -21,6 +38,10 @@ const Signup = () => {
     ? (tierParam as Tier)
     : "unspecified";
 
+  // Step 30a v1: only Individual is self-serve on Stripe. Other tiers stay
+  // on the waitlist path even when billing is configured.
+  const checkoutEnabled = isBillingEnabled() && tier === "individual";
+
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
   const [company, setCompany] = useState("");
@@ -28,8 +49,11 @@ const Signup = () => {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    track({ name: "signup_started", payload: { tier } });
-  }, [tier]);
+    track({
+      name: "signup_started",
+      payload: { tier, mode: checkoutEnabled ? "checkout" : "waitlist" },
+    });
+  }, [tier, checkoutEnabled]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +62,31 @@ const Signup = () => {
       return;
     }
     setSubmitting(true);
+
+    if (checkoutEnabled) {
+      try {
+        const { checkout_url } = await createCheckoutSession({
+          email: email.trim(),
+          tier: "individual",
+          source_page: "/signup",
+        });
+        track({ name: "checkout_session_created", payload: { tier } });
+        // Hand off to Stripe-hosted Checkout. Backend has already minted
+        // the audit row; we should never return from this call.
+        window.location.assign(checkout_url);
+        return;
+      } catch (err) {
+        setSubmitting(false);
+        const isApi = err instanceof BillingApiError;
+        const message = isApi
+          ? err.message
+          : "We couldn't reach billing. Try again, or email hello@vantagemind.ai.";
+        toast.error(message);
+        return;
+      }
+    }
+
+    // Waitlist fallback (Team / Company / Unspecified, or billing not configured)
     const ok = await submitWaitlist({
       email: email.trim(),
       role: role.trim() || undefined,
@@ -57,13 +106,17 @@ const Signup = () => {
   return (
     <SiteLayout>
       <Seo
-        title="Sign up — VantageMind AI"
-        description="Self-serve sign-up for Luciel is opening soon. Drop your email and we'll let you know the moment it goes live."
+        title={checkoutEnabled ? "Start your trial — VantageMind AI" : "Sign up — VantageMind AI"}
+        description={
+          checkoutEnabled
+            ? "Start a 14-day free trial of Luciel Individual. Cancel anytime, no commitment."
+            : "Self-serve sign-up for Luciel is opening soon. Drop your email and we'll let you know the moment it goes live."
+        }
         path="/signup"
       />
       <section className="border-b border-border">
         <div className="container-narrow pt-28 pb-20 md:pt-40 md:pb-28">
-          <Eyebrow>SIGN UP</Eyebrow>
+          <Eyebrow>{checkoutEnabled ? "START YOUR TRIAL" : "SIGN UP"}</Eyebrow>
           {tier !== "unspecified" && (
             <div className="mt-5">
               <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-primary">
@@ -72,12 +125,26 @@ const Signup = () => {
             </div>
           )}
           <h1 className="font-display mt-6 max-w-3xl text-5xl leading-[1.05] tracking-tight md:text-7xl">
-            Sign-up is opening soon.
+            {checkoutEnabled ? (
+              <>14 days free.<br />Cancel anytime.</>
+            ) : (
+              <>Sign-up is opening soon.</>
+            )}
           </h1>
           <p className="mt-7 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-            We're finishing the self-serve checkout for the Individual tier. Drop your email and
-            we'll let you know the moment it's live. Team and Company tiers are sales-assisted
-            today — book a demo and we'll get you set up.
+            {checkoutEnabled ? (
+              <>
+                Drop your email and we'll send you straight to checkout. Your card isn't
+                charged until day 15, and your private Luciel deployment is provisioned the
+                moment payment confirms.
+              </>
+            ) : (
+              <>
+                We're finishing the self-serve checkout for the Individual tier. Drop your
+                email and we'll let you know the moment it's live. Team and Company tiers are
+                sales-assisted today — book a demo and we'll get you set up.
+              </>
+            )}
           </p>
 
           {done ? (
@@ -91,24 +158,41 @@ const Signup = () => {
                 <Label htmlFor="su-email">Work email</Label>
                 <Input id="su-email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="su-role">Role <span className="text-muted-foreground">(optional)</span></Label>
-                  <Input id="su-role" value={role} onChange={(e) => setRole(e.target.value)} />
+              {!checkoutEnabled && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="su-role">Role <span className="text-muted-foreground">(optional)</span></Label>
+                    <Input id="su-role" value={role} onChange={(e) => setRole(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="su-company">Company <span className="text-muted-foreground">(optional)</span></Label>
+                    <Input id="su-company" value={company} onChange={(e) => setCompany(e.target.value)} />
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="su-company">Company <span className="text-muted-foreground">(optional)</span></Label>
-                  <Input id="su-company" value={company} onChange={(e) => setCompany(e.target.value)} />
-                </div>
-              </div>
+              )}
               <div className="flex items-center gap-4 pt-2">
                 <Button type="submit" disabled={submitting}>
-                  {submitting ? "Sending…" : "Join the waitlist"}
+                  {submitting
+                    ? checkoutEnabled
+                      ? "Redirecting…"
+                      : "Sending…"
+                    : checkoutEnabled
+                      ? "Continue to checkout"
+                      : "Join the waitlist"}
                 </Button>
                 <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground">
                   Book a demo
                 </Link>
               </div>
+              {checkoutEnabled && (
+                <p className="pt-2 text-xs text-muted-foreground">
+                  By continuing, you agree to our{" "}
+                  <Link to="/legal/terms" className="underline underline-offset-2 hover:text-foreground">Terms</Link>{" "}
+                  and{" "}
+                  <Link to="/legal/privacy" className="underline underline-offset-2 hover:text-foreground">Privacy Policy</Link>.
+                  Card billed in CAD. Cancel from your account at any time during the trial.
+                </p>
+              )}
             </form>
           )}
         </div>

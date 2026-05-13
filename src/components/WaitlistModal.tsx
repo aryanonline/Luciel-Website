@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { isEmail, submitWaitlist } from "@/lib/submissions";
 import { trackCta } from "@/lib/analytics";
+import { isBillingEnabled } from "@/lib/billing";
 
 type Tier = "individual" | "team" | "company" | "unspecified";
 
@@ -101,9 +102,12 @@ export const WaitlistProvider = ({ children }: { children: ReactNode }) => {
 /**
  * WaitlistButton — single CTA used across the site.
  *
- * `mode="waitlist"` (today) opens the modal.
- * `mode="checkout"` (Step 30a) redirects to /signup?tier=… and will be
- * swapped for a Stripe-checkout redirect once that endpoint exists.
+ * `mode="waitlist"` opens the modal.
+ * `mode="checkout"` (Step 30a, Individual tier only) routes to /signup?tier=…
+ * where the user enters their email and is forwarded to Stripe-hosted
+ * Checkout via the backend (`POST /api/v1/billing/checkout`). If billing
+ * isn't configured on this build (no `VITE_STRIPE_PUBLISHABLE_KEY`), we
+ * fall back to the waitlist modal so the flow stays continuous.
  */
 export interface WaitlistButtonProps {
   tier?: Tier;
@@ -133,10 +137,14 @@ export const WaitlistButton = ({
     trackCta(typeof children === "string" ? children : "waitlist_cta", source, tier);
 
     if (mode === "checkout") {
-      // TODO(step-30a): replace this with a call to the Stripe Checkout
-      // session creator (e.g. POST /api/billing/create-checkout-session)
-      // and then `window.location.assign(session.url)`. Until then we
-      // route to the /signup stub so the flow is continuous.
+      // Step 30a: route to the email-capture step. /signup performs the
+      // POST /api/v1/billing/checkout call and redirects to Stripe-hosted
+      // Checkout. If billing isn't configured on this build we still land
+      // on /signup, which transparently falls back to the waitlist form.
+      if (!isBillingEnabled()) {
+        open(tier, source);
+        return;
+      }
       navigate(`/signup?tier=${tier}`);
       return;
     }

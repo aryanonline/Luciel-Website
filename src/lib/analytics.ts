@@ -11,9 +11,17 @@ type Tier = "individual" | "team" | "company" | "unspecified";
 export type AnalyticsEvent =
   | { name: "pricing_viewed"; payload?: Record<string, never> }
   | { name: "pricing_tier_clicked"; payload: { tier: Tier } }
-  | { name: "signup_started"; payload: { tier: Tier } }
+  | { name: "signup_started"; payload: { tier: Tier; mode?: "checkout" | "waitlist" } }
   | { name: "signup_completed"; payload: { tier?: Tier; session_id?: string } }
-  | { name: "onboarding_started"; payload: { session_id: string | null } }
+  // Step 30a billing flow events
+  | { name: "checkout_session_created"; payload: { tier: Tier } }
+  | { name: "onboarding_started"; payload: { session_id: string | null; has_session?: boolean } }
+  | { name: "onboarding_claim_succeeded"; payload: { tier: Tier } }
+  | { name: "onboarding_claim_failed"; payload: { reason: string } }
+  | { name: "login_succeeded"; payload?: Record<string, never> }
+  | { name: "login_failed"; payload: { reason: string } }
+  | { name: "logout_succeeded"; payload?: Record<string, never> }
+  | { name: "billing_portal_opened"; payload?: Record<string, never> }
   | { name: "first_conversation"; payload?: Record<string, unknown> }
   | { name: "cta_clicked"; payload: { label: string; source_page: string; tier?: Tier } };
 
