@@ -241,3 +241,70 @@ export async function listEmbedKeys(): Promise<EmbedKey[]> {
   // /admin/api-keys accepts key_kind=embed to filter
   return request<EmbedKey[]>("GET", `/api/v1/admin/api-keys?key_kind=embed`);
 }
+
+// --------------------------------------------------------------------- //
+// Agents (Step 24.5 + Step 30a.1 — team tab)
+// --------------------------------------------------------------------- //
+//
+// Step 30a.1: Team / Company tiers can list their members via
+// GET /api/v1/admin/agents (the caller's session cookie is tenant- and
+// domain-scoped by the backend, so we just call the endpoint without
+// extra filters). The Dashboard Team tab uses this to show who is on
+// the tenant.
+//
+// Inviting a teammate is folded into POST /api/v1/admin/luciel-instances
+// when ``teammate_email`` is set — see ``inviteTeammate`` below.
+
+export interface Agent {
+  id: number;
+  tenant_id: string;
+  domain_id: string;
+  agent_id: string;
+  display_name: string;
+  description: string | null;
+  contact_email: string | null;
+  active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function listAgents(activeOnly = false): Promise<Agent[]> {
+  const qs = activeOnly ? "?active_only=true" : "";
+  return request<Agent[]>("GET", `/api/v1/admin/agents${qs}`);
+}
+
+/**
+ * inviteTeammate — Step 30a.1.
+ *
+ * POSTs to /api/v1/admin/luciel-instances with ``teammate_email`` set,
+ * which the backend's invite-mode validator interprets as: resolve-or-
+ * create a User on the tenant, create an Agent + ScopeAssignment, write
+ * one audit row, send a magic link post-commit. The response is a
+ * LucielInstance (the agent-scope Luciel that was minted for the new
+ * teammate).
+ */
+export interface InviteTeammateRequest {
+  tenant_id: string;
+  /** Domain the teammate joins. Backend default is ``"general"``. */
+  domain_id: string;
+  teammate_email: string;
+  display_name: string;
+  description?: string;
+}
+
+export async function inviteTeammate(
+  payload: InviteTeammateRequest,
+): Promise<LucielInstance> {
+  // Invite mode: scope_level must be "agent"; agent_id is NOT sent
+  // (the backend slugifies the teammate's email to derive it).
+  return request<LucielInstance>("POST", `/api/v1/admin/luciel-instances`, {
+    tenant_id: payload.tenant_id,
+    scope_level: "agent" satisfies ScopeLevel,
+    scope_owner_tenant_id: payload.tenant_id,
+    scope_owner_domain_id: payload.domain_id,
+    teammate_email: payload.teammate_email,
+    display_name: payload.display_name,
+    description: payload.description,
+  });
+}

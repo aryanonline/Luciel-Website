@@ -37,12 +37,17 @@ import {
 } from "@/lib/billing";
 import {
   AdminApiError,
+  Agent,
   LucielInstance,
   TenantDashboard,
   getTenantDashboard,
+  inviteTeammate,
+  listAgents,
   listLucielInstances,
 } from "@/lib/admin";
 import { CreateLucielForm } from "@/components/admin/CreateLucielForm";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type AuthState =
   | { kind: "loading" }
@@ -186,7 +191,15 @@ const OverviewTab = ({ tenantId }: { tenantId: string }) => {
 // Luciels tab — list + create
 // --------------------------------------------------------------------- //
 
-const LucielsTab = ({ tenantId }: { tenantId: string }) => {
+const LucielsTab = ({
+  tenantId,
+  tier,
+  instanceCountCap,
+}: {
+  tenantId: string;
+  tier: SubscriptionStatus["tier"];
+  instanceCountCap: number;
+}) => {
   const [instances, setInstances] = useState<LucielInstance[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -206,19 +219,55 @@ const LucielsTab = ({ tenantId }: { tenantId: string }) => {
 
   useEffect(refresh, [tenantId]);
 
+  // Step 30a.1: gate "New Luciel" on the tier's active-instance cap so
+  // the user gets a clean local message instead of bumping into the
+  // backend's 402. We count tenant-wide active instances here — same
+  // count the backend computes via LucielInstanceRepository.count_active_for_tenant.
+  const activeCount = (instances ?? []).filter((i) => i.active).length;
+  const atCap = instances !== null && activeCount >= instanceCountCap;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Eyebrow>Your Luciels</Eyebrow>
-        <Button onClick={() => setShowCreate((s) => !s)}>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <Eyebrow>Your Luciels</Eyebrow>
+          {instances !== null && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {activeCount} of {instanceCountCap} used on your {tier} plan.
+            </p>
+          )}
+        </div>
+        <Button
+          onClick={() => setShowCreate((s) => !s)}
+          disabled={!showCreate && atCap}
+          title={atCap ? `You've reached the ${tier} plan limit (${instanceCountCap}).` : undefined}
+        >
           {showCreate ? "Cancel" : "New Luciel"}
         </Button>
       </div>
+
+      {atCap && !showCreate && (
+        <Card>
+          <div className="eyebrow">Plan limit reached</div>
+          <p className="mt-4 text-base text-muted-foreground">
+            Your {tier} plan supports up to {instanceCountCap} active Luciels.
+            Deactivate one from its detail page, or{" "}
+            <Link
+              to="/pricing"
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              upgrade to a larger plan
+            </Link>
+            {" "}for more room.
+          </p>
+        </Card>
+      )}
 
       {showCreate && (
         <Card>
           <CreateLucielForm
             tenantId={tenantId}
+            tier={tier}
             onCreated={(inst) => {
               toast.success(`Created "${inst.display_name}"`);
               setShowCreate(false);
@@ -283,6 +332,190 @@ const LucielsTab = ({ tenantId }: { tenantId: string }) => {
                   </p>
                 )}
               </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+
+// --------------------------------------------------------------------- //
+// Team tab — Step 30a.1 (Team / Company tiers only)
+// --------------------------------------------------------------------- //
+//
+// Lists active Agents on the tenant + an "Add teammate" form that POSTs
+// to /api/v1/admin/luciel-instances with teammate_email set. The backend
+// resolves-or-creates the User, mints an Agent + ScopeAssignment, and
+// sends a magic link in a single audited transaction.
+
+const TeamTab = ({
+  tenantId,
+  tier,
+}: {
+  tenantId: string;
+  tier: SubscriptionStatus["tier"];
+}) => {
+  const [members, setMembers] = useState<Agent[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const refresh = () => {
+    setError(null);
+    listAgents(true)
+      .then(setMembers)
+      .catch((err: unknown) => {
+        const msg =
+          err instanceof AdminApiError
+            ? err.message
+            : "Couldn't load your team. Try refreshing.";
+        setError(msg);
+      });
+  };
+
+  useEffect(refresh, [tenantId]);
+
+  const onInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = inviteEmail.trim();
+    const name = inviteName.trim();
+    if (!email || !email.includes("@")) {
+      toast.error("Enter a valid teammate email.");
+      return;
+    }
+    if (!name) {
+      toast.error("Add a display name for your teammate.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await inviteTeammate({
+        tenant_id: tenantId,
+        // Backend's default domain for self-serve tenants.
+        domain_id: "general",
+        teammate_email: email,
+        display_name: name,
+      });
+      toast.success(`Invited ${email}. We sent them a sign-in link.`);
+      setInviteEmail("");
+      setInviteName("");
+      setShowInvite(false);
+      refresh();
+    } catch (err) {
+      const isApi = err instanceof AdminApiError;
+      // 402 = tier-scope guard tripped (cap exceeded / scope not permitted).
+      const message = isApi
+        ? err.message
+        : "Couldn't add teammate. Try again.";
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <Eyebrow>Your team</Eyebrow>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {tier === "company"
+              ? "Everyone with access to this company deployment."
+              : "Everyone with access to this team's Luciels."}
+          </p>
+        </div>
+        <Button onClick={() => setShowInvite((s) => !s)}>
+          {showInvite ? "Cancel" : "Add teammate"}
+        </Button>
+      </div>
+
+      {showInvite && (
+        <Card>
+          <form onSubmit={onInvite} className="space-y-4" noValidate>
+            <div className="space-y-1.5">
+              <Label htmlFor="invite-email">Teammate email</Label>
+              <Input
+                id="invite-email"
+                type="email"
+                required
+                autoComplete="off"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="invite-name">Display name</Label>
+              <Input
+                id="invite-name"
+                type="text"
+                required
+                autoComplete="off"
+                value={inviteName}
+                onChange={(e) => setInviteName(e.target.value)}
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              We'll send a one-time sign-in link to that address. Their
+              Luciel and scope are provisioned the moment they accept.
+            </p>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Sending invite…" : "Send invite"}
+            </Button>
+          </form>
+        </Card>
+      )}
+
+      {error && (
+        <Card>
+          <p className="text-base text-muted-foreground">{error}</p>
+          <Button className="mt-4" onClick={refresh}>
+            Retry
+          </Button>
+        </Card>
+      )}
+
+      {!error && members === null && (
+        <Card>
+          <p className="text-base text-muted-foreground">Loading…</p>
+        </Card>
+      )}
+
+      {!error && members !== null && members.length === 0 && (
+        <Card>
+          <p className="text-base text-muted-foreground">
+            No teammates yet. Click <b>Add teammate</b> to invite the first
+            person on your team.
+          </p>
+        </Card>
+      )}
+
+      {!error && members !== null && members.length > 0 && (
+        <ul className="divide-y divide-border rounded-xl border border-border bg-card">
+          {members.map((m) => (
+            <li
+              key={m.id}
+              className="flex items-center justify-between gap-4 px-6 py-4"
+            >
+              <div className="min-w-0">
+                <div className="truncate text-base text-foreground">
+                  {m.display_name}
+                </div>
+                <div className="truncate font-mono text-xs text-muted-foreground">
+                  {m.contact_email ?? m.agent_id}
+                </div>
+              </div>
+              <span
+                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] ${
+                  m.active
+                    ? "border-primary/30 bg-primary/5 text-primary"
+                    : "border-border bg-muted/30 text-muted-foreground"
+                }`}
+              >
+                {m.active ? "Active" : "Inactive"}
+              </span>
             </li>
           ))}
         </ul>
@@ -412,24 +645,42 @@ const Dashboard = () => {
               </Card>
             )}
 
-            {auth.kind === "ok" && (
-              <Tabs defaultValue="overview">
-                <TabsList>
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="luciels">Luciels</TabsTrigger>
-                  <TabsTrigger value="account">Account</TabsTrigger>
-                </TabsList>
-                <TabsContent value="overview" className="mt-8">
-                  <OverviewTab tenantId={auth.subscription.tenant_id} />
-                </TabsContent>
-                <TabsContent value="luciels" className="mt-8">
-                  <LucielsTab tenantId={auth.subscription.tenant_id} />
-                </TabsContent>
-                <TabsContent value="account" className="mt-8">
-                  <AccountTab />
-                </TabsContent>
-              </Tabs>
-            )}
+            {auth.kind === "ok" && (() => {
+              // Step 30a.1: Team tab visible iff tier permits multi-user scope.
+              const tier = auth.subscription.tier;
+              const showTeam = tier === "team" || tier === "company";
+              return (
+                <Tabs defaultValue="overview">
+                  <TabsList>
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="luciels">Luciels</TabsTrigger>
+                    {showTeam && <TabsTrigger value="team">Team</TabsTrigger>}
+                    <TabsTrigger value="account">Account</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="overview" className="mt-8">
+                    <OverviewTab tenantId={auth.subscription.tenant_id} />
+                  </TabsContent>
+                  <TabsContent value="luciels" className="mt-8">
+                    <LucielsTab
+                      tenantId={auth.subscription.tenant_id}
+                      tier={tier}
+                      instanceCountCap={auth.subscription.instance_count_cap}
+                    />
+                  </TabsContent>
+                  {showTeam && (
+                    <TabsContent value="team" className="mt-8">
+                      <TeamTab
+                        tenantId={auth.subscription.tenant_id}
+                        tier={tier}
+                      />
+                    </TabsContent>
+                  )}
+                  <TabsContent value="account" className="mt-8">
+                    <AccountTab />
+                  </TabsContent>
+                </Tabs>
+              );
+            })()}
           </div>
         </div>
       </section>

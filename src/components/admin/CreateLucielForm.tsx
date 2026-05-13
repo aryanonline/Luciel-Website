@@ -2,20 +2,30 @@
  * CreateLucielForm — POST /api/v1/admin/luciel-instances under the
  * cookied user's tenant.
  *
- * Surfaces the minimum-viable v1 fields:
+ * Step 30a.1: scope-aware. The form's available scope choices come from
+ * the caller's subscription tier:
+ *
+ *   Individual ⇒ agent only
+ *   Team       ⇒ agent | domain
+ *   Company    ⇒ agent | domain | tenant
+ *
+ * The backend enforces the same mapping at AdminService._enforce_tier_scope
+ * and returns 402 if violated; we mirror it here for a clean UX.
+ *
+ * Surfaces the minimum-viable fields:
  *   * instance_id   — slug; we provide a sane default the operator can edit
  *   * display_name  — shown in chat + dashboard
  *   * description   — optional internal note
  *   * system_prompt_additions — the persona / behaviour text the
  *                     instance brings to chat
+ *   * scope_level   — only rendered when the tier offers a choice
  *
- * scope_level is hard-coded to "tenant" at v1: the only user that hits
- * this form is the tenant admin (cookied dashboard session). Domain-
- * and agent-scoped instances are a Step 33+ surface for multi-domain
- * tenants — out of scope for Sarah's journey.
+ * For the agent scope we currently bind to the caller's own agent (the
+ * pre-minted primary Agent from TierProvisioningService). The backend's
+ * SessionCookieAuthMiddleware infers caller_agent_id from the cookie.
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,11 +35,19 @@ import { toast } from "sonner";
 import {
   AdminApiError,
   LucielInstance,
+  ScopeLevel,
   createLucielInstance,
 } from "@/lib/admin";
+import { SubscriptionStatus } from "@/lib/billing";
 
 interface Props {
   tenantId: string;
+  /**
+   * Step 30a.1: when present, used to gate the scope dropdown. Defaults
+   * to "individual" (the most restrictive) so a form without tier
+   * context still gets a valid choice.
+   */
+  tier?: SubscriptionStatus["tier"];
   onCreated: (inst: LucielInstance) => void;
 }
 
@@ -41,12 +59,31 @@ const slugify = (s: string): string =>
     .replace(/^-+|-+$/g, "")
     .slice(0, 100) || "luciel";
 
-export const CreateLucielForm = ({ tenantId, onCreated }: Props) => {
+const TIER_SCOPES: Record<string, ScopeLevel[]> = {
+  individual: ["agent"],
+  team: ["agent", "domain"],
+  company: ["agent", "domain", "tenant"],
+  unspecified: ["agent"],
+};
+
+const SCOPE_LABEL: Record<ScopeLevel, string> = {
+  agent: "Just me (agent)",
+  domain: "Our team (domain)",
+  tenant: "Whole company (tenant)",
+};
+
+export const CreateLucielForm = ({ tenantId, tier = "individual", onCreated }: Props) => {
+  const allowedScopes = useMemo(
+    () => TIER_SCOPES[tier] ?? TIER_SCOPES.individual,
+    [tier],
+  );
+
   const [displayName, setDisplayName] = useState("");
   const [instanceId, setInstanceId] = useState("");
   const [instanceIdTouched, setInstanceIdTouched] = useState(false);
   const [description, setDescription] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
+  const [scopeLevel, setScopeLevel] = useState<ScopeLevel>(allowedScopes[0]);
   const [submitting, setSubmitting] = useState(false);
 
   // Auto-derive the slug from display name until the operator edits it.
@@ -64,10 +101,14 @@ export const CreateLucielForm = ({ tenantId, onCreated }: Props) => {
     const slug = instanceId.trim() || slugify(displayName);
     setSubmitting(true);
     try {
+      // Step 30a.1: for non-tenant scopes the backend uses the caller's
+      // own agent/domain from the cookie when scope_owner_* fields are
+      // omitted for that level. We always send scope_owner_tenant_id;
+      // for "domain" we let the backend resolve domain from the session.
       const inst = await createLucielInstance({
         instance_id: slug,
         display_name: displayName.trim(),
-        scope_level: "tenant",
+        scope_level: scopeLevel,
         scope_owner_tenant_id: tenantId,
         description: description.trim() || undefined,
         system_prompt_additions: systemPrompt.trim() || undefined,
@@ -124,6 +165,27 @@ export const CreateLucielForm = ({ tenantId, onCreated }: Props) => {
           numbers, and dashes only.
         </p>
       </div>
+
+      {allowedScopes.length > 1 && (
+        <div>
+          <Label htmlFor="scope-level">Who is this Luciel for?</Label>
+          <select
+            id="scope-level"
+            value={scopeLevel}
+            onChange={(e) => setScopeLevel(e.target.value as ScopeLevel)}
+            className="mt-2 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+          >
+            {allowedScopes.map((s) => (
+              <option key={s} value={s}>
+                {SCOPE_LABEL[s]}
+              </option>
+            ))}
+          </select>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Your {tier} plan supports {allowedScopes.map((s) => SCOPE_LABEL[s].toLowerCase()).join(", ")}.
+          </p>
+        </div>
+      )}
 
       <div>
         <Label htmlFor="description">Description (optional)</Label>
