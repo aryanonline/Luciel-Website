@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Check } from "lucide-react";
 import { SiteLayout } from "@/components/SiteLayout";
 import { Seo } from "@/components/Seo";
@@ -10,14 +10,23 @@ import { WaitlistButton } from "@/components/WaitlistModal";
 import { track, trackCta } from "@/lib/analytics";
 
 type Tier = "individual" | "team" | "company";
+type Cadence = "monthly" | "annual";
 
 interface TierCard {
   id: Tier;
   label: string;
-  price: string;
+  monthlyPrice: string;
+  annualPrice: string;
   audience: string;
   bullets: string[];
-  primary: "waitlist" | "demo";
+  /**
+   * Step 30a.1 — all three tiers are now self-serve on Stripe. Company
+   * keeps a primary "Book a demo" CTA with a hidden "Skip the call →"
+   * link available behind ?showSkip=1 so we can quietly send qualified
+   * leads straight to checkout without leaking the path on the public page.
+   */
+  primary: "checkout" | "demo-with-skip";
+  trialCopy: string;
   highlighted?: boolean;
 }
 
@@ -25,41 +34,51 @@ const tiers: TierCard[] = [
   {
     id: "individual",
     label: "INDIVIDUAL",
-    // Step 30a: locked single SKU at $30 CAD/mo for the Individual tier.
-    price: "$30",
+    // Step 30a.1: tier pricing locked. Monthly = working price; annual =
+    // 10× monthly (i.e. two months free relative to month-by-month).
+    monthlyPrice: "$30",
+    annualPrice: "$300",
     audience: "A single professional working on their own behalf.",
     bullets: [
       "One person's Luciels, configured for their own client work",
       "Private deployment, own scope, own audit trail",
       "Configurable per role and workflow",
-      "14-day free trial — cancel anytime",
+      "14-day free trial on monthly — cancel anytime",
     ],
-    primary: "waitlist",
+    primary: "checkout",
+    trialCopy: "14-day free trial",
   },
   {
     id: "team",
     label: "TEAM",
-    price: "$300–800",
+    monthlyPrice: "$300",
+    annualPrice: "$3,000",
     audience: "A department or team within a larger company.",
     bullets: [
       "All the Luciels for that team",
       "Department dashboard and team-level memory",
       "Cross-member coordination, scope-enforced",
+      "7-day free trial on monthly",
     ],
-    primary: "demo",
+    primary: "checkout",
+    trialCopy: "7-day free trial",
     highlighted: true,
   },
   {
     id: "company",
     label: "COMPANY",
-    price: "$2,000",
-    audience: "A whole company — every department, every team, every individual under company policy and audit.",
+    monthlyPrice: "$2,000",
+    annualPrice: "$20,000",
+    audience:
+      "A whole company — every department, every team, every individual under company policy and audit.",
     bullets: [
       "Company-wide deployment with full hierarchy",
       "Company, department, and individual dashboards",
       "Immutable audit trail across every scope",
+      "7-day free trial on monthly",
     ],
-    primary: "demo",
+    primary: "demo-with-skip",
+    trialCopy: "7-day free trial",
   },
 ];
 
@@ -84,12 +103,29 @@ const faqs: [string, string][] = [
     "How does billing work when team leadership changes?",
     "Data lives with the scope, not the person. When leadership changes, access is rotated cleanly and the team's Luciels keep working — because the data was never personally owned.",
   ],
+  [
+    "Monthly or annual — what's the difference?",
+    "Pick the cadence that matches how you buy. Monthly comes with a free trial (14 days on Individual, 7 days on Team and Company); annual is billed once a year at ten times the monthly rate — effectively two months free — with no trial. Both cadences are the same product at the same scope.",
+  ],
 ];
 
 const Pricing = () => {
+  const [params] = useSearchParams();
+  // Step 30a.1: Company tier's primary CTA stays "Book a demo" on the
+  // public page. The "Skip the call →" link to self-serve checkout is
+  // gated behind ?showSkip=1 so we can hand it to qualified leads
+  // without exposing the bypass to general traffic.
+  const showCompanySkip = useMemo(() => params.get("showSkip") === "1", [params]);
+
+  const [cadence, setCadence] = useState<Cadence>("monthly");
+
   useEffect(() => {
     track({ name: "pricing_viewed" });
   }, []);
+
+  useEffect(() => {
+    track({ name: "pricing_cadence_toggled", payload: { cadence } });
+  }, [cadence]);
 
   return (
     <SiteLayout>
@@ -117,88 +153,159 @@ const Pricing = () => {
       {/* Tier cards */}
       <section className="border-b border-border">
         <div className="container-narrow py-20 md:py-24">
+          {/* Cadence toggle */}
+          <div className="mb-10 flex justify-center">
+            <div
+              role="tablist"
+              aria-label="Billing cadence"
+              className="inline-flex items-center rounded-full border border-border bg-card p-1"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={cadence === "monthly"}
+                onClick={() => setCadence("monthly")}
+                className={`rounded-full px-5 py-2 text-sm transition-colors ${
+                  cadence === "monthly"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={cadence === "annual"}
+                onClick={() => setCadence("annual")}
+                className={`rounded-full px-5 py-2 text-sm transition-colors ${
+                  cadence === "annual"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Annual
+                <span className="ml-2 text-[10px] uppercase tracking-[0.15em] text-primary/80">
+                  2 mo free
+                </span>
+              </button>
+            </div>
+          </div>
+
           <div className="grid gap-6 md:grid-cols-3">
-            {tiers.map((t) => (
-              <div key={t.id} className="flex flex-col">
-                {t.highlighted && (
-                  <div className="mb-3 text-center">
-                    <span className="eyebrow text-primary">Most popular</span>
-                  </div>
-                )}
-                <div
-                  className={`flex h-full flex-col rounded-xl border bg-card p-7 ${
-                    t.highlighted ? "border-primary/50 shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]" : "border-border"
-                  }`}
-                >
-                  <div className="eyebrow">{t.label}</div>
-                  <div className="mt-5 flex items-baseline gap-1.5">
-                    <div className="font-display text-5xl tracking-tight text-foreground">{t.price}</div>
-                  </div>
-                  <div className="mt-1 text-sm text-muted-foreground">/month</div>
-                  <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{t.audience}</p>
+            {tiers.map((t) => {
+              const displayPrice = cadence === "monthly" ? t.monthlyPrice : t.annualPrice;
+              const perSubtext = cadence === "monthly" ? "/month" : "/year";
 
-                  <ul className="mt-7 space-y-3 text-sm text-muted-foreground">
-                    {t.bullets.map((b) => (
-                      <li key={b} className="flex gap-3">
-                        <Check size={16} className="mt-0.5 flex-shrink-0 text-primary/80" strokeWidth={1.5} />
-                        <span>{b}</span>
-                      </li>
-                    ))}
-                  </ul>
+              return (
+                <div key={t.id} className="flex flex-col">
+                  {t.highlighted && (
+                    <div className="mb-3 text-center">
+                      <span className="eyebrow text-primary">Most popular</span>
+                    </div>
+                  )}
+                  <div
+                    className={`flex h-full flex-col rounded-xl border bg-card p-7 ${
+                      t.highlighted
+                        ? "border-primary/50 shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]"
+                        : "border-border"
+                    }`}
+                  >
+                    <div className="eyebrow">{t.label}</div>
+                    <div className="mt-5 flex items-baseline gap-1.5">
+                      <div className="font-display text-5xl tracking-tight text-foreground">
+                        {displayPrice}
+                      </div>
+                    </div>
+                    <div className="mt-1 text-sm text-muted-foreground">{perSubtext}</div>
+                    <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{t.audience}</p>
 
-                  <div className="mt-auto pt-8">
-                    {t.primary === "waitlist" ? (
-                      <>
-                        {/* Step 30a: Individual tier flips to mode="checkout" which
-                            routes to /signup → Stripe-hosted Checkout. When
-                            VITE_STRIPE_PUBLISHABLE_KEY is unset on a build the
-                            button transparently falls back to the waitlist modal. */}
-                        <WaitlistButton
-                          tier={t.id}
-                          mode="checkout"
-                          className="w-full"
-                          sourcePage="/pricing"
-                        >
-                          Start free trial
-                        </WaitlistButton>
-                        <Link
-                          to={`/contact?tier=${t.id}`}
-                          onClick={() => trackCta("Book a demo", "/pricing", t.id)}
-                          className="mt-4 block text-center text-sm text-muted-foreground hover:text-foreground"
-                        >
-                          Book a demo
-                        </Link>
-                      </>
-                    ) : (
-                      <>
-                        <Button asChild className="w-full">
+                    <ul className="mt-7 space-y-3 text-sm text-muted-foreground">
+                      {t.bullets.map((b) => (
+                        <li key={b} className="flex gap-3">
+                          <Check size={16} className="mt-0.5 flex-shrink-0 text-primary/80" strokeWidth={1.5} />
+                          <span>{b}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="mt-auto pt-8">
+                      {t.primary === "checkout" ? (
+                        <>
+                          {/* Step 30a.1: Individual + Team are now both
+                              self-serve. Forwards cadence so the backend
+                              resolves to the correct Stripe Price. Falls
+                              back to waitlist when VITE_STRIPE_PUBLISHABLE_KEY
+                              is unset on this build. */}
+                          <WaitlistButton
+                            tier={t.id}
+                            mode="checkout"
+                            cadence={cadence}
+                            className="w-full"
+                            sourcePage="/pricing"
+                          >
+                            {cadence === "monthly" ? "Start free trial" : "Start annual plan"}
+                          </WaitlistButton>
                           <Link
                             to={`/contact?tier=${t.id}`}
-                            onClick={() => {
-                              track({ name: "pricing_tier_clicked", payload: { tier: t.id } });
-                              trackCta("Book a demo", "/pricing", t.id);
-                            }}
+                            onClick={() => trackCta("Book a demo", "/pricing", t.id)}
+                            className="mt-4 block text-center text-sm text-muted-foreground hover:text-foreground"
                           >
                             Book a demo
                           </Link>
-                        </Button>
-                        <div className="mt-4 text-center">
-                          <WaitlistButton
-                            tier={t.id}
-                            mode="waitlist"
-                            variant="ghost"
-                            sourcePage="/pricing"
-                            className="text-sm text-muted-foreground hover:text-foreground"
-                          >
-                            Join the waitlist
-                          </WaitlistButton>
-                        </div>
-                      </>
-                    )}
+                        </>
+                      ) : (
+                        <>
+                          {/* Company tier — primary stays "Book a demo".
+                              The "Skip the call →" link to self-serve
+                              checkout is only rendered when ?showSkip=1
+                              is present, so we can quietly route
+                              qualified leads without exposing the
+                              bypass on the public page. */}
+                          <Button asChild className="w-full">
+                            <Link
+                              to={`/contact?tier=${t.id}`}
+                              onClick={() => {
+                                track({ name: "pricing_tier_clicked", payload: { tier: t.id } });
+                                trackCta("Book a demo", "/pricing", t.id);
+                              }}
+                            >
+                              Book a demo
+                            </Link>
+                          </Button>
+                          {showCompanySkip ? (
+                            <div className="mt-4 text-center">
+                              <WaitlistButton
+                                tier={t.id}
+                                mode="checkout"
+                                cadence={cadence}
+                                variant="ghost"
+                                sourcePage="/pricing"
+                                className="text-sm text-muted-foreground hover:text-foreground"
+                              >
+                                Skip the call →
+                              </WaitlistButton>
+                            </div>
+                          ) : (
+                            <div className="mt-4 text-center">
+                              <WaitlistButton
+                                tier={t.id}
+                                mode="waitlist"
+                                variant="ghost"
+                                sourcePage="/pricing"
+                                className="text-sm text-muted-foreground hover:text-foreground"
+                              >
+                                Join the waitlist
+                              </WaitlistButton>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Why the prices look this way */}

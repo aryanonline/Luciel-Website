@@ -113,6 +113,12 @@ export interface WaitlistButtonProps {
   tier?: Tier;
   /** "waitlist" today; flip to "checkout" once Step 30a ships. */
   mode?: "waitlist" | "checkout";
+  /**
+   * Step 30a.1 — billing cadence forwarded to /signup as a query param,
+   * which forwards it to POST /api/v1/billing/checkout. Defaults to
+   * "monthly" on the backend when omitted.
+   */
+  cadence?: "monthly" | "annual";
   variant?: "default" | "ghost" | "outline" | "secondary";
   size?: "sm" | "default" | "lg";
   className?: string;
@@ -123,6 +129,7 @@ export interface WaitlistButtonProps {
 export const WaitlistButton = ({
   tier = "unspecified",
   mode = "waitlist",
+  cadence,
   variant = "default",
   size = "default",
   className,
@@ -145,7 +152,10 @@ export const WaitlistButton = ({
         open(tier, source);
         return;
       }
-      navigate(`/signup?tier=${tier}`);
+      // Step 30a.1 — forward cadence so the cadence toggle on /pricing
+      // drives which Stripe Price the backend resolves to.
+      const cadenceParam = cadence ? `&cadence=${cadence}` : "";
+      navigate(`/signup?tier=${tier}${cadenceParam}`);
       return;
     }
 

@@ -16,6 +16,9 @@
 
 type Tier = "individual" | "team" | "company" | "unspecified";
 
+/** Step 30a.1 — billing cadence (monthly vs annual). */
+export type BillingCadence = "monthly" | "annual";
+
 const env = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
 
 export const API_BASE_URL: string =
@@ -30,6 +33,12 @@ export interface CheckoutRequest {
   email: string;
   display_name: string;
   tier: Tier;
+  /**
+   * Step 30a.1 — billing cadence. Defaults to "monthly" on the server when
+   * omitted; passed explicitly from /pricing so the cadence toggle drives
+   * which Stripe Price the backend resolves to.
+   */
+  billing_cadence?: BillingCadence;
   source_page?: string;
 }
 
@@ -48,6 +57,13 @@ export interface CheckoutResponse {
 export interface SubscriptionStatus {
   tenant_id: string;
   tier: Tier;
+  /** Step 30a.1 — billing cadence ("monthly" | "annual"). */
+  billing_cadence: BillingCadence;
+  /**
+   * Step 30a.1 — max number of active Luciels for this subscription's tier.
+   * Used by the Dashboard to gate the Create Luciel CTA.
+   */
+  instance_count_cap: number;
   status: string; // "trialing" | "active" | "past_due" | "canceled" | "unpaid" | "incomplete" | "incomplete_expired"
   active: boolean;
   is_entitled: boolean;
@@ -116,11 +132,17 @@ async function getJson<T>(path: string): Promise<T> {
 }
 
 export async function createCheckoutSession(req: CheckoutRequest): Promise<CheckoutResponse> {
-  return postJson<CheckoutResponse>("/api/v1/billing/checkout", {
+  const body: Record<string, unknown> = {
     email: req.email,
     display_name: req.display_name,
     tier: req.tier,
-  });
+  };
+  // Step 30a.1 — only forward billing_cadence when the caller passed it,
+  // so the server's monthly default keeps working for any older caller.
+  if (req.billing_cadence) {
+    body.billing_cadence = req.billing_cadence;
+  }
+  return postJson<CheckoutResponse>("/api/v1/billing/checkout", body);
 }
 
 export async function claimCheckoutSession(sessionId: string): Promise<OnboardingClaimResponse> {
