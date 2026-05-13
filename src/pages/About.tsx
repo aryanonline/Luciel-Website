@@ -134,7 +134,7 @@ const About = () => {
             Want to talk?
           </h2>
           <div className="mt-9">
-            <Button size="lg" onClick={open}>Request a design-partner pilot</Button>
+            <Button asChild size="lg"><Link to="/contact?tier=team">Request a design-partner pilot</Link></Button>
           </div>
         </div>
       </section>
