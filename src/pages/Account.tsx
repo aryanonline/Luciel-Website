@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   BillingApiError,
-  BillingStatus,
+  SubscriptionStatus,
   createPortalSession,
   getBillingStatus,
   logout as billingLogout,
@@ -65,21 +65,25 @@ const StatusPill = ({ status }: { status?: string }) => {
  * BillingTab — Step 30a real billing surface.
  *
  * Fetches `/api/v1/billing/me` to determine whether the user has a signed
- * session cookie and an active subscription. Renders:
+ * session cookie and an active subscription. The backend's contract:
  *
- *   - Loading → skeleton
- *   - Unauthenticated → "sign in" prompt pointing back at /signup
- *   - Active / trialing → tier, status pill, next renewal, "Manage billing"
- *     (POST /portal → redirect), "Sign out" (POST /logout)
- *   - Canceled → muted summary with a "Reactivate" CTA back to /pricing
- *   - Error → friendly retry
+ *   * 200 + SubscriptionStatus — cookied user with a Subscription row.
+ *   * 401                      — no cookie / invalid cookie / inactive user.
+ *   * 404                      — cookied user but no Subscription on file.
+ *   * 501                      — Stripe not configured on this backend.
+ *
+ * We map those four cases to UI states: ok / unauthenticated / no_sub /
+ * error. "Manage billing" POSTs /portal; "Sign out" POSTs /logout.
  */
+type BillingState =
+  | { kind: "loading" }
+  | { kind: "ok"; status: SubscriptionStatus }
+  | { kind: "unauthenticated" }
+  | { kind: "no_sub" }
+  | { kind: "error"; message: string };
+
 const BillingTab = () => {
-  const [state, setState] = useState<
-    | { kind: "loading" }
-    | { kind: "ok"; status: BillingStatus }
-    | { kind: "error"; message: string }
-  >({ kind: "loading" });
+  const [state, setState] = useState<BillingState>({ kind: "loading" });
   const [portalSubmitting, setPortalSubmitting] = useState(false);
 
   const refresh = () => {
@@ -87,11 +91,19 @@ const BillingTab = () => {
     getBillingStatus()
       .then((status) => setState({ kind: "ok", status }))
       .catch((err: unknown) => {
-        const message =
-          err instanceof BillingApiError
-            ? err.message
-            : "Couldn't load billing status. Try refreshing.";
-        setState({ kind: "error", message });
+        if (err instanceof BillingApiError) {
+          if (err.status === 401) {
+            setState({ kind: "unauthenticated" });
+            return;
+          }
+          if (err.status === 404) {
+            setState({ kind: "no_sub" });
+            return;
+          }
+          setState({ kind: "error", message: err.message });
+          return;
+        }
+        setState({ kind: "error", message: "Couldn't load billing status. Try refreshing." });
       });
   };
 
@@ -144,9 +156,7 @@ const BillingTab = () => {
     );
   }
 
-  const s = state.status;
-
-  if (!s.authenticated) {
+  if (state.kind === "unauthenticated") {
     return (
       <div className="mt-8 rounded-xl border border-border bg-card p-8">
         <div className="eyebrow">Sign in required</div>
@@ -162,6 +172,23 @@ const BillingTab = () => {
     );
   }
 
+  if (state.kind === "no_sub") {
+    return (
+      <div className="mt-8 rounded-xl border border-border bg-card p-8">
+        <div className="eyebrow">No subscription on file</div>
+        <p className="mt-4 text-base text-muted-foreground">
+          You're signed in, but we don't see a paid subscription for this account. Start a
+          trial to spin up your Individual Luciel deployment.
+        </p>
+        <div className="mt-6 flex gap-3">
+          <Button asChild><Link to="/pricing">View pricing</Link></Button>
+          <Button variant="ghost" onClick={onSignOut}>Sign out</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const s = state.status;
   const renewal = fmtDate(s.current_period_end);
   const isCanceled = s.status === "canceled" || s.status === "incomplete_expired";
 
@@ -176,11 +203,11 @@ const BillingTab = () => {
         <dl className="mt-6 grid gap-4 sm:grid-cols-2">
           <div>
             <dt className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Account</dt>
-            <dd className="mt-1 text-base text-foreground">{s.email ?? "—"}</dd>
+            <dd className="mt-1 text-base text-foreground">{s.customer_email}</dd>
           </div>
           <div>
             <dt className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Tier</dt>
-            <dd className="mt-1 text-base capitalize text-foreground">{s.tier ?? "—"}</dd>
+            <dd className="mt-1 text-base capitalize text-foreground">{s.tier}</dd>
           </div>
           {renewal && (
             <div>
@@ -194,12 +221,10 @@ const BillingTab = () => {
               <dd className="mt-1 text-base text-foreground">{renewal}</dd>
             </div>
           )}
-          {s.tenant_id && (
-            <div>
-              <dt className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Tenant</dt>
-              <dd className="mt-1 font-mono text-sm text-muted-foreground">{s.tenant_id}</dd>
-            </div>
-          )}
+          <div>
+            <dt className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Tenant</dt>
+            <dd className="mt-1 font-mono text-sm text-muted-foreground">{s.tenant_id}</dd>
+          </div>
         </dl>
 
         <div className="mt-8 flex flex-wrap gap-3">

@@ -28,6 +28,7 @@ export const isBillingEnabled = (): boolean => !!STRIPE_PUBLISHABLE_KEY;
 
 export interface CheckoutRequest {
   email: string;
+  display_name: string;
   tier: Tier;
   source_page?: string;
 }
@@ -37,23 +38,35 @@ export interface CheckoutResponse {
   session_id: string;
 }
 
-export interface BillingStatus {
-  authenticated: boolean;
-  email?: string;
-  tenant_id?: string;
-  tier?: Tier;
-  status?: string; // "trialing" | "active" | "past_due" | "canceled" | …
-  current_period_end?: string | null;
-  cancel_at_period_end?: boolean;
+/**
+ * Subscription state returned by `GET /api/v1/billing/me`.
+ * Mirrors `SubscriptionStatusResponse` in app/schemas/billing.py.
+ *
+ * The endpoint returns 404 when the cookied user has no subscription;
+ * BillingApiError surfaces that to callers so the UI can branch.
+ */
+export interface SubscriptionStatus {
+  tenant_id: string;
+  tier: Tier;
+  status: string; // "trialing" | "active" | "past_due" | "canceled" | "unpaid" | "incomplete" | "incomplete_expired"
+  active: boolean;
+  is_entitled: boolean;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  trial_end: string | null;
+  cancel_at_period_end: boolean;
+  canceled_at: string | null;
+  customer_email: string;
 }
 
 export interface PortalResponse {
   portal_url: string;
 }
 
+/** Mirrors `OnboardingClaimResponse` in app/schemas/billing.py. */
 export interface OnboardingClaimResponse {
-  email: string;
-  magic_link_sent: boolean;
+  state: "pending" | "ready" | "unknown";
+  email_sent_to: string | null;
 }
 
 class BillingApiError extends Error {
@@ -105,8 +118,8 @@ async function getJson<T>(path: string): Promise<T> {
 export async function createCheckoutSession(req: CheckoutRequest): Promise<CheckoutResponse> {
   return postJson<CheckoutResponse>("/api/v1/billing/checkout", {
     email: req.email,
+    display_name: req.display_name,
     tier: req.tier,
-    source_page: req.source_page,
   });
 }
 
@@ -116,8 +129,8 @@ export async function claimCheckoutSession(sessionId: string): Promise<Onboardin
   });
 }
 
-export async function getBillingStatus(): Promise<BillingStatus> {
-  return getJson<BillingStatus>("/api/v1/billing/me");
+export async function getBillingStatus(): Promise<SubscriptionStatus> {
+  return getJson<SubscriptionStatus>("/api/v1/billing/me");
 }
 
 export async function createPortalSession(): Promise<PortalResponse> {

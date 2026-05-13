@@ -43,6 +43,7 @@ const Signup = () => {
   const checkoutEnabled = isBillingEnabled() && tier === "individual";
 
   const [email, setEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState("");
   const [company, setCompany] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -64,9 +65,16 @@ const Signup = () => {
     setSubmitting(true);
 
     if (checkoutEnabled) {
+      const trimmedName = displayName.trim();
+      if (!trimmedName) {
+        setSubmitting(false);
+        toast.error("Add your name so we can put it on your account.");
+        return;
+      }
       try {
         const { checkout_url } = await createCheckoutSession({
           email: email.trim(),
+          display_name: trimmedName,
           tier: "individual",
           source_page: "/signup",
         });
@@ -158,6 +166,19 @@ const Signup = () => {
                 <Label htmlFor="su-email">Work email</Label>
                 <Input id="su-email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
+              {checkoutEnabled && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="su-name">Your name</Label>
+                  <Input
+                    id="su-name"
+                    type="text"
+                    required
+                    autoComplete="name"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                  />
+                </div>
+              )}
               {!checkoutEnabled && (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">

@@ -10,7 +10,9 @@ import { BillingApiError, claimCheckoutSession } from "@/lib/billing";
 type ClaimState =
   | { kind: "idle" }
   | { kind: "claiming" }
-  | { kind: "sent"; email: string }
+  | { kind: "ready"; email: string | null }
+  | { kind: "pending"; email: string | null }
+  | { kind: "unknown" }
   | { kind: "no_session" }
   | { kind: "error"; message: string };
 
@@ -19,18 +21,15 @@ type ClaimState =
  *
  * Stripe redirects here as `/onboarding?session_id={CHECKOUT_SESSION_ID}`
  * after the user completes checkout. We POST the session id to the
- * backend's `/api/v1/billing/onboarding/claim` endpoint, which:
+ * backend's `/api/v1/billing/onboarding/claim` endpoint, which returns
+ * one of three states:
  *
- *   1. Verifies the Checkout Session is paid + linked to a Subscription.
- *      (The webhook may have already minted the tenant — that's expected
- *      and idempotent; we just need the email so we can resend the
- *      magic link if the user lost the original.)
- *   2. Mints / re-mints a magic-link token and emails it to the customer.
- *   3. Returns `{ email, magic_link_sent: true }`.
+ *   * "ready"   — webhook has minted the Subscription; magic link sent now.
+ *   * "pending" — webhook hasn't arrived yet; backend will email when it does.
+ *   * "unknown" — Stripe doesn't recognize the session_id.
  *
- * We then render the "check your email" state. The user clicks the link
- * in their inbox, which sets the session cookie and lands them on
- * /account/billing.
+ * The user clicks the link in their email, which sets the session cookie
+ * via `/login` and lands them on `/account/billing`.
  */
 const Onboarding = () => {
   const [params] = useSearchParams();
@@ -59,7 +58,13 @@ const Onboarding = () => {
     claimCheckoutSession(sessionId)
       .then((res) => {
         track({ name: "onboarding_claim_succeeded", payload: { tier: "individual" } });
-        setState({ kind: "sent", email: res.email });
+        if (res.state === "ready") {
+          setState({ kind: "ready", email: res.email_sent_to });
+        } else if (res.state === "pending") {
+          setState({ kind: "pending", email: res.email_sent_to });
+        } else {
+          setState({ kind: "unknown" });
+        }
       })
       .catch((err: unknown) => {
         const message =
@@ -82,15 +87,25 @@ const Onboarding = () => {
         <div className="container-narrow pt-28 pb-24 md:pt-40 md:pb-32">
           <Eyebrow>WELCOME</Eyebrow>
 
-          {state.kind === "sent" ? (
+          {state.kind === "ready" || state.kind === "pending" ? (
             <>
               <h1 className="font-display mt-6 max-w-3xl text-5xl leading-[1.05] tracking-tight md:text-7xl">
                 Check your email.
               </h1>
               <p className="mt-7 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-                We sent a sign-in link to <span className="text-foreground">{state.email}</span>.
-                Click it to land in your account. The link is good for 24 hours; we'll mint a
-                new one if you need it.
+                {state.email ? (
+                  <>
+                    We sent a sign-in link to{" "}
+                    <span className="text-foreground">{state.email}</span>.
+                  </>
+                ) : (
+                  <>
+                    We sent a sign-in link to the email on your checkout.
+                  </>
+                )}{" "}
+                {state.kind === "pending"
+                  ? "Stripe is still confirming payment with us — the link will arrive within a minute."
+                  : "Click it to land in your account. The link is good for 24 hours; we'll mint a new one if you need it."}
               </p>
               <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
                 Your Luciel deployment is being provisioned in the background and will be
@@ -99,6 +114,19 @@ const Onboarding = () => {
               </p>
               <div className="mt-10 flex gap-3">
                 <Button asChild variant="ghost"><Link to="/">Back to home</Link></Button>
+              </div>
+            </>
+          ) : state.kind === "unknown" ? (
+            <>
+              <h1 className="font-display mt-6 max-w-3xl text-5xl leading-[1.05] tracking-tight md:text-7xl">
+                We couldn't match your checkout.
+              </h1>
+              <p className="mt-7 max-w-2xl text-lg leading-relaxed text-muted-foreground">
+                Stripe doesn't recognize this session id. If you just paid, give us a couple
+                minutes and reload; otherwise reach out and we'll sort it out.
+              </p>
+              <div className="mt-10 flex gap-3">
+                <Button asChild><Link to="/contact">Contact support</Link></Button>
               </div>
             </>
           ) : state.kind === "claiming" ? (
