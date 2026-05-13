@@ -44,7 +44,7 @@ const trustReasons = [
   {
     name: "Cross-channel continuity",
     body:
-      "The same Luciel — same identity, same memory, same posture — across chat, email, embedded surfaces, and integrations.",
+      "Designed for chat, voice, SMS, email, and embedded surfaces — chat widget and programmatic API are live today; voice, SMS, and email arrive with our next release. Same scope policy, same memory, same audit trail across every channel.",
   },
 ];
 
