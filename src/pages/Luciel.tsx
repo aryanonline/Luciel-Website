@@ -235,7 +235,9 @@ const Luciel = () => {
               pricing, direct access to the team, and a real say in the roadmap.
             </p>
             <div className="pt-3">
-              <Button onClick={open}>Become a design partner</Button>
+              <Button asChild>
+                <Link to="/contact?tier=team" onClick={() => trackCta("Become a design partner", "/products/luciel", "team")}>Become a design partner</Link>
+              </Button>
             </div>
           </div>
         </FadeIn>
@@ -251,11 +253,19 @@ const Luciel = () => {
             Thirty-minute demo, scoped to the work you'd actually want it to do.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button size="lg" onClick={open}>Book a demo</Button>
+            <Button asChild size="lg">
+              <Link to="/contact" onClick={() => trackCta("Book a demo", "/products/luciel")}>Book a demo</Link>
+            </Button>
             <Button asChild size="lg" variant="ghost">
               <Link to="/platform">See the platform</Link>
             </Button>
           </div>
+        </div>
+        {LUCIEL_EMBED_KEY && (
+          <p className="container-narrow pb-16 text-center text-xs text-muted-foreground">
+            Talk to Luciel — embedded right here on this page.
+          </p>
+        )}
         </div>
       </section>
     </SiteLayout>
