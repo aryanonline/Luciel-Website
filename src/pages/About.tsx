@@ -9,7 +9,6 @@ import { FadeIn } from "@/components/FadeIn";
 const LINKEDIN_URL = "https://www.linkedin.com/in/aryan-singh-726825109/";
 
 const About = () => {
-  const { open } = useContactModal();
   return (
     <SiteLayout>
       <Seo
