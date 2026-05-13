@@ -1,15 +1,15 @@
+import { Link } from "react-router-dom";
 import { Linkedin } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { SiteLayout } from "@/components/SiteLayout";
 import { Eyebrow, SectionHeading } from "@/components/Section";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/FadeIn";
-import { useContactModal } from "@/components/ContactModal";
+
 
 const LINKEDIN_URL = "https://www.linkedin.com/in/aryan-singh-726825109/";
 
 const About = () => {
-  const { open } = useContactModal();
   return (
     <SiteLayout>
       <Seo
@@ -135,7 +135,7 @@ const About = () => {
             Want to talk?
           </h2>
           <div className="mt-9">
-            <Button size="lg" onClick={open}>Request a design-partner pilot</Button>
+            <Button asChild size="lg"><Link to="/contact?tier=team">Request a design-partner pilot</Link></Button>
           </div>
         </div>
       </section>

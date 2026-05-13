@@ -4,7 +4,7 @@ import { SiteLayout } from "@/components/SiteLayout";
 import { Eyebrow } from "@/components/Section";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/FadeIn";
-import { useContactModal } from "@/components/ContactModal";
+
 
 const pillars = [
   {
@@ -50,7 +50,6 @@ const pillars = [
 ];
 
 const Trust = () => {
-  const { open } = useContactModal();
   return (
     <SiteLayout>
       <Seo
@@ -172,7 +171,7 @@ const Trust = () => {
             We're happy to walk through controls, scope behavior, and audit posture in detail.
           </p>
           <div className="mt-10">
-            <Button size="lg" onClick={open}>Book a demo</Button>
+            <Button asChild size="lg"><Link to="/contact">Book a demo</Link></Button>
           </div>
         </div>
       </section>

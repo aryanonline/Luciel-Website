@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, User, Users, Building2 } from "lucide-react";
 import { Seo } from "@/components/Seo";
@@ -6,7 +7,18 @@ import { Eyebrow } from "@/components/Section";
 import { Button } from "@/components/ui/button";
 import { LucielOrb } from "@/components/LucielOrb";
 import { FadeIn } from "@/components/FadeIn";
-import { useContactModal } from "@/components/ContactModal";
+import { trackCta } from "@/lib/analytics";
+
+const env = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
+const LUCIEL_EMBED_KEY = env.VITE_LUCIEL_MARKETING_EMBED_KEY;
+const LUCIEL_WIDGET_SRC = "https://d1t84i96t71fsi.cloudfront.net/widget.js";
+
+const recommendationShape: { eyebrow: string; title: string; body: string }[] = [
+  { eyebrow: "1", title: "What suits you best", body: "The recommendation itself, stated plainly." },
+  { eyebrow: "2", title: "Why it fits you", body: "The reasoning, grounded in what we know about your situation." },
+  { eyebrow: "3", title: "The tradeoff", body: "What you give up by choosing this. Never hidden." },
+  { eyebrow: "4", title: "What I still need to confirm", body: "The open question. Luciel names it rather than guessing past it." },
+];
 
 const trustReasons = [
   {
@@ -32,12 +44,23 @@ const trustReasons = [
   {
     name: "Cross-channel continuity",
     body:
-      "The same Luciel — same identity, same memory, same posture — across chat, email, embedded surfaces, and integrations.",
+      "Designed for chat, voice, SMS, email, and embedded surfaces — chat widget and programmatic API are live today; voice, SMS, and email arrive with our next release. Same scope policy, same memory, same audit trail across every channel.",
   },
 ];
 
 const Luciel = () => {
-  const { open } = useContactModal();
+  // Inject the Luciel marketing widget once when the embed key is present.
+  useEffect(() => {
+    if (!LUCIEL_EMBED_KEY) return;
+    if (document.querySelector(`script[src="${LUCIEL_WIDGET_SRC}"]`)) return;
+    const s = document.createElement("script");
+    s.src = LUCIEL_WIDGET_SRC;
+    s.async = true;
+    s.setAttribute("data-luciel-api-base", "https://api.vantagemind.ai");
+    s.setAttribute("data-luciel-embed-key", LUCIEL_EMBED_KEY);
+    document.head.appendChild(s);
+  }, []);
+
   return (
     <SiteLayout>
       <Seo
@@ -62,7 +85,9 @@ const Luciel = () => {
             individual professional, a department, or your whole company.
           </p>
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-            <Button size="lg" onClick={open}>Book a demo</Button>
+            <Button asChild size="lg">
+              <Link to="/contact" onClick={() => trackCta("Book a demo", "/products/luciel")}>Book a demo</Link>
+            </Button>
             <Button asChild size="lg" variant="ghost">
               <Link to="/platform" className="inline-flex items-center gap-1.5">
                 See the platform <ArrowRight size={16} />
@@ -190,6 +215,28 @@ const Luciel = () => {
         </FadeIn>
       </section>
 
+      {/* RECOMMENDATION SHAPE */}
+      <section className="border-b border-border">
+        <FadeIn className="container-narrow py-24 md:py-32">
+          <Eyebrow>Anatomy of a recommendation</Eyebrow>
+          <h2 className="font-display mt-5 max-w-3xl text-4xl leading-[1.05] tracking-tight md:text-5xl">
+            How a recommendation looks.
+          </h2>
+          <p className="mt-6 max-w-2xl text-muted-foreground">
+            Every Luciel recommendation, in any domain, follows the same four-part shape.
+          </p>
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {recommendationShape.map((c) => (
+              <div key={c.title} className="rounded-xl border border-border bg-card p-6">
+                <div className="eyebrow text-primary">{c.eyebrow}</div>
+                <h3 className="font-display mt-3 text-xl tracking-tight text-foreground">{c.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{c.body}</p>
+              </div>
+            ))}
+          </div>
+        </FadeIn>
+      </section>
+
       {/* FIRST VERTICAL */}
       <section className="border-b border-border bg-card/40">
         <FadeIn className="container-narrow grid gap-12 py-20 md:grid-cols-[0.9fr_1.3fr] md:py-28 md:gap-16">
@@ -210,7 +257,9 @@ const Luciel = () => {
               pricing, direct access to the team, and a real say in the roadmap.
             </p>
             <div className="pt-3">
-              <Button onClick={open}>Become a design partner</Button>
+              <Button asChild>
+                <Link to="/contact?tier=team" onClick={() => trackCta("Become a design partner", "/products/luciel", "team")}>Become a design partner</Link>
+              </Button>
             </div>
           </div>
         </FadeIn>
@@ -226,12 +275,19 @@ const Luciel = () => {
             Thirty-minute demo, scoped to the work you'd actually want it to do.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button size="lg" onClick={open}>Book a demo</Button>
+            <Button asChild size="lg">
+              <Link to="/contact" onClick={() => trackCta("Book a demo", "/products/luciel")}>Book a demo</Link>
+            </Button>
             <Button asChild size="lg" variant="ghost">
               <Link to="/platform">See the platform</Link>
             </Button>
           </div>
         </div>
+        {LUCIEL_EMBED_KEY && (
+          <p className="container-narrow pb-16 text-center text-xs text-muted-foreground">
+            Talk to Luciel — embedded right here on this page.
+          </p>
+        )}
       </section>
     </SiteLayout>
   );

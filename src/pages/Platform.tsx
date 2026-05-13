@@ -5,7 +5,7 @@ import { SiteLayout } from "@/components/SiteLayout";
 import { Eyebrow } from "@/components/Section";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/FadeIn";
-import { useContactModal } from "@/components/ContactModal";
+
 
 const pillars = [
   {
@@ -47,7 +47,6 @@ const pillars = [
 ];
 
 const Platform = () => {
-  const { open } = useContactModal();
   return (
     <SiteLayout>
       <Seo
@@ -134,7 +133,7 @@ const Platform = () => {
             A thirty-minute walk-through, scoped to your business and the work you'd want it to do.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button size="lg" onClick={open}>Book a demo</Button>
+            <Button asChild size="lg"><Link to="/contact">Book a demo</Link></Button>
             <Button asChild size="lg" variant="ghost">
               <Link to="/products/luciel" className="inline-flex items-center gap-1.5">
                 Explore Luciel <ArrowRight size={16} />
