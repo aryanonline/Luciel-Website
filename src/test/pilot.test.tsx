@@ -18,7 +18,7 @@
  * exercises the round-trip against staging/prod.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 
@@ -195,6 +195,46 @@ describe("Pricing page pilot refund footnote", () => {
     expect(footnote.textContent).toMatch(/90-day window/i);
     expect(footnote.textContent).toMatch(/one-click/i);
     expect(footnote.textContent).toMatch(/cancels your subscription/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 3b. Pricing page — primary CTA label gating (Commit 3d).
+//
+// Regression for the 2026-05-15 live smoke finding: the Pricing tier cards
+// shipped the legacy "Start free trial" label even though Commit 3c had
+// flipped the pilot surface everywhere else (Nav, Signup, Account, Terms
+// §16, Pricing footnote). Without these tests a future copy change to
+// monthly/annual cadence labels could silently regress us back to the
+// pre-pilot funnel where the page promises a free trial and the backend
+// charges the $100 intro fee.
+// ---------------------------------------------------------------------------
+
+describe("Pricing page primary CTA label gating", () => {
+  it("renders 'Start 90-day pilot' on the Individual + Team monthly cards", () => {
+    renderPricing();
+    // Default cadence is "monthly". Individual + Team are
+    // ``primary === 'checkout'`` cards; Company is ``demo-with-skip`` and
+    // keeps "Book a demo" as the primary, so we only assert two pilot CTAs.
+    const pilotCtas = screen.getAllByRole("button", { name: /start 90-day pilot/i });
+    expect(pilotCtas).toHaveLength(2);
+    // The legacy label must not appear on the rendered page.
+    expect(screen.queryByRole("button", { name: /start free trial/i })).toBeNull();
+  });
+
+  it("reverts to 'Start annual plan' when the annual cadence is selected", () => {
+    renderPricing();
+    // Toggle the cadence pill from "Monthly" to "Annual". The toggle is
+    // a <button role="tab"> labelled "Annual". We use fireEvent.click
+    // (not user-event) so we don't introduce a new test dependency.
+    const annualToggle = screen.getByRole("tab", { name: /annual/i });
+    fireEvent.click(annualToggle);
+    // After toggling, the two self-serve cards must label their primary
+    // CTA as "Start annual plan" — the pilot is monthly-only per
+    // CANONICAL_RECAP §14 ¶273, so annual buyers never see the pilot label.
+    const annualCtas = screen.getAllByRole("button", { name: /start annual plan/i });
+    expect(annualCtas).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: /start 90-day pilot/i })).toBeNull();
   });
 });
 

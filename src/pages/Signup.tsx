@@ -116,6 +116,28 @@ const Signup = () => {
           navigate(`/contact?tier=${tier}&from=signup`);
           return;
         }
+        // Step 30a.2-pilot Commit 3d — leave a breadcrumb on the catch
+        // path so the next live smoke can diagnose without DevTools.
+        // The 2026-05-15 CORS preflight 405 manifested as a generic
+        // "couldn't reach billing" toast with no clue in the console;
+        // a tagged console.error gives future-us a foothold. We do NOT
+        // log raw err for non-BillingApiError because that can be a
+        // network error containing the user's email in the request body
+        // — we log just the error name + status so PII never leaves the
+        // browser tab.
+        if (isApi) {
+          console.error(
+            "[billing] checkout failed status=%s detail=%s",
+            err.status,
+            err.message,
+          );
+        } else {
+          console.error(
+            "[billing] checkout request failed name=%s message=%s",
+            (err as Error)?.name ?? "unknown",
+            (err as Error)?.message ?? "unknown",
+          );
+        }
         const message = isApi
           ? err.message
           : "We couldn't reach billing. Try again, or email hello@vantagemind.ai.";

@@ -273,6 +273,29 @@ const Pricing = () => {
                               resolves to the correct Stripe Price. Falls
                               back to waitlist when VITE_STRIPE_PUBLISHABLE_KEY
                               is unset on this build. */}
+                          {/*
+                            Step 30a.2-pilot Commit 3d — pilot-eligibility
+                            gating on the primary CTA label.
+
+                            Mirrors Signup.tsx::pilotEligibleSurface: the
+                            $100 / 90-day pilot is a MONTHLY-ONLY offer per
+                            CANONICAL_RECAP §14 ¶273. Annual buyers see the
+                            unchanged "Start annual plan" label. The pilot's
+                            first-time-customer eligibility is hard-enforced
+                            at the backend gate
+                            (BillingService.is_first_time_customer) — we
+                            don't probe here because (a) the email isn't
+                            entered yet on the Pricing page and (b) the
+                            backend gate is the only trustworthy source. A
+                            repeat customer who clicks through gets routed
+                            to the standard subscription path server-side
+                            without ever seeing this label drift.
+
+                            Company tier never reaches this branch (its
+                            ``primary === 'demo-with-skip'``) so we don't
+                            need to exclude it explicitly here — the
+                            outer ternary already does that.
+                          */}
                           <WaitlistButton
                             tier={t.id}
                             mode="checkout"
@@ -280,7 +303,7 @@ const Pricing = () => {
                             className="w-full"
                             sourcePage="/pricing"
                           >
-                            {cadence === "monthly" ? "Start free trial" : "Start annual plan"}
+                            {cadence === "monthly" ? "Start 90-day pilot" : "Start annual plan"}
                           </WaitlistButton>
                           <Link
                             to={`/contact?tier=${t.id}`}
