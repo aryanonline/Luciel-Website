@@ -12,11 +12,15 @@ interface Section {
 const sections: Section[] = [
   {
     title: "What we collect",
-    body: "Account information, content you submit to our products, and operational telemetry necessary to run the service.",
+    body:
+      "We collect three categories of information. (1) Account information: your name, business email, organization, role, and the billing details required to create and maintain your subscription \u2014 the latter handled by our payment processor (Stripe) and not stored in plaintext on our servers. (2) Customer Content: the data you submit to or generate through the Service, including documents you upload, conversations Luciel has on your behalf, configuration you supply, and audit metadata about those interactions. (3) Operational telemetry: the technical records we need to run, secure, and improve the Service \u2014 request and response timing, error traces, IP address at the time of access, anonymous usage analytics about which features are used, and the structured audit-log entries described in our Terms of Service and at /security. We do not knowingly collect personal information from children, and the Service is not designed for use by individuals under sixteen.",
+    committed: true,
   },
   {
     title: "How we use it",
-    body: "To deliver, secure, and improve the service. We do not sell personal information and we do not use customer content to train third-party foundation models.",
+    body:
+      "We use the information we collect to (a) deliver the Service to you and to the natural persons authorized under your account, (b) operate, secure, and improve the Service \u2014 including investigating incidents, preventing abuse, and tuning performance, (c) handle billing, send transactional messages such as sign-in links and receipts, and respond to your support requests, and (d) comply with our legal obligations. We do not sell personal information. We do not use Customer Content to train third-party foundation models, and we do not authorize our model providers to do so. We may use aggregated, de-identified telemetry to evaluate the Service and to publish operational summaries, but only after the data is severed from any natural person.",
+    committed: true,
   },
   {
     title: "Where it lives",
@@ -53,6 +57,12 @@ const LegalPrivacy = () => (
         <h1 className="font-display mt-6 max-w-3xl text-5xl leading-[1.05] tracking-tight md:text-6xl">
           Privacy Policy
         </h1>
+        <p className="mt-7 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          This is the v1 customer-facing version of the VantageMind AI Privacy Policy. It
+          reflects the data-handling practices we run today and is written in plain language.
+          A comprehensive legal review is scheduled; any material changes will be announced to
+          active subscribers and reflected in the “Last updated” date below.
+        </p>
       </div>
     </section>
 
@@ -70,7 +80,7 @@ const LegalPrivacy = () => (
             </li>
           ))}
         </ol>
-        <p className="mt-16 text-xs text-muted-foreground">Last updated: pending publish.</p>
+        <p className="mt-16 text-xs text-muted-foreground">Last updated: May 2026.</p>
       </div>
     </section>
   </SiteLayout>
