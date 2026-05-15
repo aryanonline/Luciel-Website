@@ -100,6 +100,11 @@ const sections: Section[] = [
       "We may update these Terms from time to time. Material changes affecting paid features will be announced to active subscribers at least thirty (30) days before they take effect. Non-material clarifications and corrections take effect on posting. The \u201cLast updated\u201d date at the bottom of this page reflects the current version. Continued use of the Service after a change takes effect constitutes acceptance of the updated Terms.",
   },
   {
+    title: "Pilot refund amendment (introductory offer)",
+    body:
+      "From time to time we offer a 90-day pilot of the Service at an introductory price of one hundred Canadian dollars (CAD $100), payable once at signup. The pilot is available to first-time customers only — we determine first-time status by reference to the email address on file at checkout and, where applicable, the Stripe customer record. During the 90-day pilot window the customer may, at any time and without justification, request a full refund of the CAD $100 introductory fee using the self-serve control on the account page (or by writing to billing@vantagemind.ai). Issuing the refund cancels the subscription and deactivates the account in the same operation; refund proceeds are returned to the original payment method through Stripe and typically appear within five to seven business days. On day 91, if the subscription has not been canceled and no refund has been requested, the subscription automatically converts to the regular monthly rate for the tier selected at signup, billed in advance on a monthly cadence, and the general refund discretion in the Payment section above resumes. This pilot amendment supplements, and where in conflict prevails over, the Payment section above for subscriptions created under the introductory offer.",
+  },
+  {
     title: "Contact",
     body:
       "Questions about these Terms can be addressed to contact@vantagemind.ai. Privacy-specific questions should be addressed to privacy@vantagemind.ai. Security-incident reports should be sent to security@vantagemind.ai. VantageMind AI is based in Markham, Ontario, Canada.",
@@ -139,7 +144,7 @@ const LegalTerms = () => (
             </li>
           ))}
         </ol>
-        <p className="mt-16 text-xs text-muted-foreground">Last updated: May 2026.</p>
+        <p className="mt-16 text-xs text-muted-foreground">Last updated: May 15, 2026 — Pilot refund amendment.</p>
       </div>
     </section>
   </SiteLayout>

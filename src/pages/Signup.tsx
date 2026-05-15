@@ -144,15 +144,28 @@ const Signup = () => {
   // Step 30a.1 — trial copy by tier (matches BillingService.resolve_trial_days)
   const trialDays = tier === "individual" ? 14 : 7;
   const isAnnual = cadence === "annual";
+  // Step 30a.2-pilot — pilot offer is monthly-only and first-time-only.
+  // Annual buyers and unspecified-tier walk-ins see the standard copy.
+  // First-time detection itself is hard-enforced at the backend via
+  // ``BillingService.is_first_time_customer(email)`` — we don't probe
+  // here because (a) the email isn't entered yet on first render and
+  // (b) the backend gate is the only trustworthy source. If a repeat
+  // customer somehow lands on a pilot-flavored signup, checkout will
+  // route them to the standard subscription path server-side.
+  const pilotEligibleSurface = checkoutEnabled && !isAnnual && tier !== "unspecified";
   const seoTitle = checkoutEnabled
     ? isAnnual
       ? "Start your annual plan — VantageMind AI"
-      : "Start your trial — VantageMind AI"
+      : pilotEligibleSurface
+        ? "Start your 90-day pilot — VantageMind AI"
+        : "Start your trial — VantageMind AI"
     : "Sign up — VantageMind AI";
   const seoDesc = checkoutEnabled
     ? isAnnual
       ? `Start an annual plan for Luciel ${tier}. Cancel anytime, no commitment.`
-      : `Start a ${trialDays}-day free trial of Luciel ${tier}. Cancel anytime, no commitment.`
+      : pilotEligibleSurface
+        ? `Start a 90-day pilot of Luciel ${tier} for $100 CAD. Full refund any time in the pilot window. First-time customers only.`
+        : `Start a ${trialDays}-day free trial of Luciel ${tier}. Cancel anytime, no commitment.`
     : "Self-serve sign-up for Luciel is opening soon. Drop your email and we'll let you know the moment it goes live.";
 
   return (
@@ -164,7 +177,9 @@ const Signup = () => {
             {checkoutEnabled
               ? isAnnual
                 ? "START YOUR PLAN"
-                : "START YOUR TRIAL"
+                : pilotEligibleSurface
+                  ? "START YOUR 90-DAY PILOT"
+                  : "START YOUR TRIAL"
               : "SIGN UP"}
           </Eyebrow>
           {tier !== "unspecified" && (
@@ -178,6 +193,8 @@ const Signup = () => {
             {checkoutEnabled ? (
               isAnnual ? (
                 <>Annual plan.<br />One bill a year.</>
+              ) : pilotEligibleSurface ? (
+                <>90 days for $100.<br />Refund anytime.</>
               ) : (
                 <>{trialDays} days free.<br />Cancel anytime.</>
               )
@@ -193,6 +210,15 @@ const Signup = () => {
                   billed up front at ten times the monthly rate — effectively two months free —
                   with no trial. Your private Luciel deployment is provisioned the moment
                   payment confirms.
+                </>
+              ) : pilotEligibleSurface ? (
+                <>
+                  Drop your email and we'll send you straight to checkout for the $100 CAD
+                  pilot. You get 90 days at the {tier} tier; on day 91 your subscription
+                  converts to the regular monthly rate. Change your mind anytime in the 90-day
+                  window and refund the full $100 yourself with one click from your account
+                  page. Refunds also close the account in the same step. First-time customers
+                  only — if you've subscribed before, you'll be routed to the standard plan.
                 </>
               ) : (
                 <>
@@ -252,7 +278,9 @@ const Signup = () => {
                       ? "Redirecting…"
                       : "Sending…"
                     : checkoutEnabled
-                      ? "Continue to checkout"
+                      ? pilotEligibleSurface
+                        ? "Continue to pilot checkout"
+                        : "Continue to checkout"
                       : "Join the waitlist"}
                 </Button>
                 <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground">

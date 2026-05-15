@@ -147,6 +147,31 @@ const Pricing = () => {
             Individual Luciel — it can see across the team, learn from every conversation, and act
             on behalf of any member. That is a different product, not a larger version of the same one.
           </p>
+          {/* Step 30a.2-pilot — introductory offer banner. The $100 CAD
+              one-time fee unlocks a 90-day pilot at the tier the buyer
+              picks below; the backend enforces first-time-customer
+              eligibility and the refund is self-serve from the account
+              page during the pilot window. Copy is locked to the
+              CANONICAL_RECAP §14 ¶273 refund policy sentence. */}
+          <div className="mt-10 rounded-xl border border-primary/30 bg-primary/5 p-6 md:p-7">
+            <div className="flex flex-wrap items-baseline gap-3">
+              <span className="eyebrow text-primary">Introductory offer</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                First-time customers · limited time
+              </span>
+            </div>
+            <p className="mt-4 font-display text-2xl leading-snug tracking-tight text-foreground md:text-3xl">
+              90 days for <span className="text-primary">$100&nbsp;CAD</span>.
+              Full refund, any time in the window.
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">
+              Pick a tier below and pay $100 CAD once at signup. You get 90 days at the tier you
+              chose. On day 91 your subscription converts to the regular monthly rate for that tier
+              — you can cancel before then from your account. Change your mind during the 90 days
+              and you can refund the full $100 yourself with one click, no email back-and-forth.
+              Refunds during the pilot window also close the account.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -218,6 +243,17 @@ const Pricing = () => {
                       </div>
                     </div>
                     <div className="mt-1 text-sm text-muted-foreground">{perSubtext}</div>
+                    {/* Step 30a.2-pilot — day-91 conversion hint on the
+                        monthly card. The $100 / 90-day pilot converts
+                        to this monthly rate on day 91. Annual cadence
+                        intentionally skips this hint because the pilot
+                        is a monthly-only offer per CANONICAL_RECAP. */}
+                    {cadence === "monthly" && (
+                      <div className="mt-2 text-xs leading-snug text-muted-foreground">
+                        Or start a 90-day pilot for $100 CAD &mdash;
+                        converts to {t.monthlyPrice}/mo on day 91.
+                      </div>
+                    )}
                     <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{t.audience}</p>
 
                     <ul className="mt-7 space-y-3 text-sm text-muted-foreground">
@@ -330,6 +366,25 @@ const Pricing = () => {
             <p className="text-sm leading-relaxed text-muted-foreground">
               Dedicated infrastructure tier — own database, own compute, own audit boundary —
               available on request for customers whose compliance posture requires it.
+            </p>
+          </div>
+
+          {/* Step 30a.2-pilot — refund footnote. Plain-English
+              statement of the locked pilot-refund policy. Kept on the
+              pricing page (not buried in the FAQ) because the refund
+              guarantee is the offer's load-bearing trust signal. */}
+          <div
+            id="pilot-refund"
+            data-testid="pilot-refund-footnote"
+            className="mt-8 rounded-xl border border-border bg-card/40 p-7"
+          >
+            <div className="eyebrow mb-3">Pilot refund policy</div>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              The 90-day pilot is available to first-time customers and the $100 CAD intro fee is
+              fully refundable, on demand, at any time during the 90-day window. Refunds are
+              one-click from your account page and process to the original card via Stripe;
+              issuing a refund cancels your subscription in the same step. After day 90 the
+              standard policy in our <Link to="/legal/terms" className="underline underline-offset-2 hover:text-foreground">Terms of Service</Link> applies.
             </p>
           </div>
         </div>

@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   BillingApiError,
+  PilotRefundResponse,
   SubscriptionStatus,
   createPortalSession,
   getBillingStatus,
   logout as billingLogout,
+  requestPilotRefund,
 } from "@/lib/billing";
 import { track } from "@/lib/analytics";
 
@@ -100,9 +102,138 @@ type BillingState =
   | { kind: "no_sub" }
   | { kind: "error"; message: string };
 
+/**
+ * Step 30a.2-pilot — derive "can the user self-refund right now?" from
+ * the SubscriptionStatus shape. The button must only render when:
+ *   1. is_pilot === true (server-verified pilot subscription, derived
+ *      from provider_snapshot.metadata.luciel_intro_applied), AND
+ *   2. pilot_window_end is set, AND
+ *   3. now <= pilot_window_end (so the day-91 cliff hides the button).
+ *
+ * The backend re-enforces all three conditions, so a stale tab that
+ * clicks the button after the window expires still gets a clean 409,
+ * which the click handler surfaces as a toast.
+ */
+export const isRefundEligible = (status: SubscriptionStatus): boolean => {
+  if (!status.is_pilot) return false;
+  if (!status.pilot_window_end) return false;
+  const cutoff = new Date(status.pilot_window_end).getTime();
+  if (Number.isNaN(cutoff)) return false;
+  return Date.now() <= cutoff;
+};
+
+/**
+ * PilotRefundPanel — the self-serve refund surface.
+ *
+ * Renders only when `isRefundEligible(status)` returns true. The click
+ * path is: confirm → POST /api/v1/billing/pilot-refund → on success
+ * surface a confirmation card and trigger a parent refresh so the rest
+ * of the Billing tab re-renders as "canceled / no_sub". On error, surface
+ * the BillingApiError message via toast and let the user retry.
+ *
+ * The confirm uses window.confirm because:
+ *   1. It's the lowest-friction single-step UX (the locked judgement),
+ *      and we already trust the same primitive elsewhere in the app.
+ *   2. The action is reversible from the Stripe dashboard for 24h if
+ *      the customer claims accident.
+ *   3. The audit row + (eventually) SES receipt creates a paper trail.
+ *
+ * If we later want a two-step “type REFUND to confirm” modal, the seam
+ * is just this one component — nothing upstream depends on the dialog.
+ */
+const PilotRefundPanel = ({
+  status,
+  onRefunded,
+}: {
+  status: SubscriptionStatus;
+  onRefunded: (resp: PilotRefundResponse) => void;
+}) => {
+  const [submitting, setSubmitting] = useState(false);
+  const cutoff = status.pilot_window_end ? new Date(status.pilot_window_end) : null;
+  const cutoffLabel = cutoff ? fmtDate(cutoff.toISOString()) : null;
+
+  const onRefund = async () => {
+    const confirmed = window.confirm(
+      `Refund your $100 CAD pilot fee and close your account?\n\n` +
+      `This will refund the full $100 to your original card via Stripe, ` +
+      `cancel your subscription, and deactivate your account in the same step. ` +
+      `This cannot be undone from the website.`,
+    );
+    if (!confirmed) return;
+
+    setSubmitting(true);
+    track({ name: "pilot_refund_requested" });
+    try {
+      const resp = await requestPilotRefund();
+      track({
+        name: "pilot_refund_succeeded",
+        payload: { refund_id: resp.refund_id ?? "unknown", amount: resp.refunded_amount_cents },
+      });
+      toast.success("Refunded $100 CAD. Your account has been closed.");
+      onRefunded(resp);
+    } catch (err) {
+      setSubmitting(false);
+      track({
+        name: "pilot_refund_failed",
+        payload: {
+          status: err instanceof BillingApiError ? err.status : 0,
+        },
+      });
+      // Map the backend error codes to human-friendly toast copy.
+      // The cases here mirror billing.ts's contract block; if a new
+      // code appears we still degrade cleanly to the raw message.
+      if (err instanceof BillingApiError) {
+        if (err.status === 403) {
+          toast.error("This pilot offer is for first-time customers only.");
+        } else if (err.status === 409) {
+          toast.error("The 90-day pilot window has already closed.");
+        } else if (err.status === 404) {
+          toast.error("We couldn't find the pilot charge to refund. Contact support.");
+        } else if (err.status === 501) {
+          toast.error("Pilot refunds aren't configured yet. Email us at hello@vantagemind.ai.");
+        } else {
+          toast.error(err.message);
+        }
+      } else {
+        toast.error("Couldn't process the refund. Try again in a moment.");
+      }
+    }
+  };
+
+  return (
+    <div
+      data-testid="pilot-refund-panel"
+      className="rounded-xl border border-primary/30 bg-primary/5 p-8"
+    >
+      <div className="flex flex-wrap items-baseline gap-3">
+        <div className="eyebrow text-primary">Pilot refund</div>
+        <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          Available until {cutoffLabel ?? "the pilot window closes"}
+        </span>
+      </div>
+      <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+        You're in the 90-day pilot window. You can refund the full $100 CAD to your original
+        card at any time before {cutoffLabel ?? "the window closes"}. Issuing a refund
+        cancels your subscription and closes the account in the same step.
+      </p>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Button
+          data-testid="pilot-refund-button"
+          variant="destructive"
+          onClick={onRefund}
+          disabled={submitting}
+        >
+          {submitting ? "Refunding…" : "Refund my pilot ($100 CAD)"}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 const BillingTab = () => {
   const [state, setState] = useState<BillingState>({ kind: "loading" });
   const [portalSubmitting, setPortalSubmitting] = useState(false);
+  const [refunded, setRefunded] = useState<PilotRefundResponse | null>(null);
 
   const refresh = () => {
     setState({ kind: "loading" });
@@ -154,6 +285,49 @@ const BillingTab = () => {
       toast.error("Sign-out didn't go through. Try again.");
     }
   };
+
+  // Step 30a.2-pilot — after a successful refund the backend has
+  // already cascade-deactivated the tenant and canceled the
+  // subscription. We surface the confirmation card and stop
+  // re-fetching the status (re-fetching would now return 404 /
+  // unauthenticated and feel like a regression to the user).
+  const onRefunded = (resp: PilotRefundResponse) => {
+    setRefunded(resp);
+  };
+
+  // Step 30a.2-pilot — refund-complete surface takes precedence over
+  // everything else; once the cascade has run the rest of the tab is
+  // stale by definition.
+  if (refunded) {
+    return (
+      <div className="mt-8 space-y-6" data-testid="pilot-refund-complete">
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-8">
+          <div className="eyebrow text-primary">Refund complete</div>
+          <h3 className="font-display mt-3 text-2xl tracking-tight text-foreground">
+            $100 CAD refunded.
+          </h3>
+          <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+            Your refund has been issued to the original card and should appear within 5–7
+            business days. Your subscription has been canceled and your account has been
+            closed in the same step.
+          </p>
+          {refunded.refund_id && (
+            <p className="mt-4 font-mono text-xs text-muted-foreground">
+              Stripe refund id: {refunded.refund_id}
+            </p>
+          )}
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button asChild>
+              <Link to="/">Back to home</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link to="/contact">Anything we can do better?</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (state.kind === "loading") {
     return (
@@ -209,6 +383,10 @@ const BillingTab = () => {
   const s = state.status;
   const renewal = fmtDate(s.current_period_end);
   const isCanceled = s.status === "canceled" || s.status === "incomplete_expired";
+  // Step 30a.2-pilot — the refund panel must NOT render when the
+  // subscription is already canceled (the cascade has run) or when
+  // the window has closed; isRefundEligible folds both gates in.
+  const showRefundPanel = !isCanceled && isRefundEligible(s);
 
   return (
     <div className="mt-8 space-y-6">
@@ -265,6 +443,10 @@ const BillingTab = () => {
           </p>
         )}
       </div>
+
+      {showRefundPanel && (
+        <PilotRefundPanel status={s} onRefunded={onRefunded} />
+      )}
     </div>
   );
 };

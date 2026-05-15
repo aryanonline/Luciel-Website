@@ -96,6 +96,38 @@ export interface SubscriptionStatus {
   cancel_at_period_end: boolean;
   canceled_at: string | null;
   customer_email: string;
+  /**
+   * Step 30a.2-pilot — true iff this subscription was minted under the
+   * $100 CAD 90-day pilot offer. Distinct from `status === "trialing"`
+   * because pilots and ordinary trials share the trialing status; the
+   * pilot signal is derived server-side from
+   * `provider_snapshot.metadata.luciel_intro_applied`.
+   *
+   * The Account UI uses this flag to decide whether to render the
+   * self-serve "Refund my pilot" button. Never POST /pilot-refund
+   * speculatively just to discover eligibility — read this field.
+   */
+  is_pilot: boolean;
+  /**
+   * Step 30a.2-pilot — UTC instant the 90-day refund window closes.
+   * Equal to `trial_end` whenever `is_pilot === true`; null otherwise.
+   * The button must hide when `now > pilot_window_end`, but the backend
+   * still enforces the cutoff (returns 409 PilotWindowExpiredError).
+   */
+  pilot_window_end: string | null;
+}
+
+/**
+ * Step 30a.2-pilot — response from POST /api/v1/billing/pilot-refund.
+ * Mirrors `PilotRefundResponse` in app/schemas/billing.py.
+ */
+export interface PilotRefundResponse {
+  refund_id: string | null;
+  charge_id: string;
+  refunded_amount_cents: number;
+  currency: string;
+  tenant_id: string;
+  deactivated_at: string;
 }
 
 export interface PortalResponse {
@@ -184,6 +216,27 @@ export async function createPortalSession(): Promise<PortalResponse> {
 
 export async function logout(): Promise<{ ok: true }> {
   return postJson<{ ok: true }>("/api/v1/billing/logout", {});
+}
+
+/**
+ * Step 30a.2-pilot — request a self-serve pilot refund.
+ *
+ * Contract (per app/services/billing_service.py::process_pilot_refund):
+ *   200 PilotRefundResponse      — refund posted, subscription canceled,
+ *                                   tenant cascade-deactivated.
+ *   401                          — no session cookie / invalid cookie.
+ *   403 not_first_time_customer  — repeat customer caught at the backend gate.
+ *   404                          — no active sub, or no intro Charge found.
+ *   409 intro_window_expired     — past the 90-day refund cliff.
+ *   501                          — Stripe / SSM intro Price not configured.
+ *
+ * The UI should never have to handle 403/409 in production because the
+ * button is only rendered when `is_pilot && now <= pilot_window_end`,
+ * but we still surface BillingApiError so a stale tab can degrade
+ * gracefully.
+ */
+export async function requestPilotRefund(): Promise<PilotRefundResponse> {
+  return postJson<PilotRefundResponse>("/api/v1/billing/pilot-refund", {});
 }
 
 export { BillingApiError };

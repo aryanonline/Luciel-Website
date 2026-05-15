@@ -73,7 +73,18 @@ export const Nav = () => {
         </nav>
 
         <div className="hidden items-center gap-2 lg:flex">
+          {/* Step 30a.2-pilot — pilot CTA precedes the demo CTA so the
+              90-day / $100 offer is the first thing scanning eyes hit.
+              Target is /pricing (NOT /signup) because the locked nav
+              doctrine is "compare plans first, then commit" — the
+              pricing page surfaces the pilot banner + the day-91
+              conversion table + the refund policy in one read. */}
           <Button asChild size="sm">
+            <Link to="/pricing" onClick={() => trackCta("Start 90-day pilot", pathname)}>
+              Start 90-day pilot
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="ghost">
             <Link to="/contact" onClick={() => trackCta("Book a demo", pathname)}>Book a demo</Link>
           </Button>
         </div>
@@ -97,8 +108,14 @@ export const Nav = () => {
                 {l.label}
               </Link>
             ))}
-            <div className="mt-3">
+            <div className="mt-3 space-y-2">
+              {/* Same pilot-first ordering on mobile. */}
               <Button asChild size="sm" className="w-full">
+                <Link to="/pricing" onClick={() => trackCta("Start 90-day pilot", pathname)}>
+                  Start 90-day pilot
+                </Link>
+              </Button>
+              <Button asChild size="sm" variant="ghost" className="w-full">
                 <Link to="/contact" onClick={() => trackCta("Book a demo", pathname)}>Book a demo</Link>
               </Button>
             </div>
