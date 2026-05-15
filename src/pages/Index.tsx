@@ -14,7 +14,7 @@ const Index = () => {
     <SiteLayout>
       <Seo
         title="VantageMind AI — AI judgment systems for Canadian businesses"
-        description="VantageMind builds disciplined AI judgment systems for Canadian businesses. One intelligence, deployed across teams and individuals — scoped, governed, and accountable."
+        description="VantageMind builds disciplined AI judgment systems for Canadian businesses — scoped, governed, and accountable across teams and individuals."
         path="/"
       />
 
@@ -99,8 +99,10 @@ const Index = () => {
               scope it is deployed at, the work it is doing, and the rules it is bound by.
             </p>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
-              First serving Canadian real-estate brokerages: a private assistant per agent,
-              a coordinated layer across the team, and an accountable system for the brokerage.
+              First launching with Canadian real-estate brokerages — a private assistant per
+              agent, a coordinated layer across the team, and an accountable system for the
+              firm. The same architecture extends to other professional-services verticals as
+              we onboard them.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg">

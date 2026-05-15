@@ -258,7 +258,7 @@ const Luciel = () => {
             </p>
             <div className="pt-3">
               <Button asChild>
-                <Link to="/contact?tier=team" onClick={() => trackCta("Become a design partner", "/products/luciel", "team")}>Become a design partner</Link>
+                <Link to="/contact?tier=team" onClick={() => trackCta("Request a design-partner pilot", "/products/luciel", "team")}>Request a design-partner pilot</Link>
               </Button>
             </div>
           </div>

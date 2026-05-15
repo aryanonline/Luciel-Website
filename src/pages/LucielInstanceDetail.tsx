@@ -520,6 +520,7 @@ const LucielInstanceDetail = () => {
         title={instance ? `${instance.display_name} — Dashboard` : "Luciel — Dashboard"}
         description="Configure, test, and deploy your Luciel."
         path={`/dashboard/luciels/${pk ?? ""}`}
+        noIndex
       />
       <section className="border-b border-border">
         <div className="container-narrow pt-28 pb-24 md:pt-40 md:pb-32">

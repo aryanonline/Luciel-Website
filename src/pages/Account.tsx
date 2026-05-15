@@ -15,10 +15,28 @@ import {
 } from "@/lib/billing";
 import { track } from "@/lib/analytics";
 
-const Placeholder = ({ label }: { label: string }) => (
+/**
+ * ProfilePanel — minimal honest profile surface (F3-3).
+ *
+ * Step 30a.2 keeps the Account screen anchored on billing because that is the
+ * only Step-30 ownable surface for the customer. Profile editing (name,
+ * notification preferences, password rotation) ships in a later step. Until
+ * then we show the customer what they actually need today — the email Stripe
+ * has on file is the source of truth for sign-in — and point them at Billing
+ * to manage everything else.
+ */
+const ProfilePanel = () => (
   <div className="mt-8 rounded-xl border border-border bg-card p-8">
-    <div className="eyebrow">{label}</div>
-    <p className="mt-4 text-base text-muted-foreground">Coming with our next release.</p>
+    <div className="eyebrow">Profile</div>
+    <p className="mt-4 text-base text-muted-foreground">
+      The email on your Stripe customer record is the source of truth for sign-in. To change
+      it, open the billing portal and update the email on your customer profile — the change
+      flows through to your next sign-in link automatically.
+    </p>
+    <p className="mt-4 text-sm text-muted-foreground">
+      Editable profile fields (display name, notification preferences, password rotation)
+      ship in a later release. Until then, manage everything from the Billing tab.
+    </p>
   </div>
 );
 
@@ -251,12 +269,16 @@ const BillingTab = () => {
   );
 };
 
-const Account = ({ defaultTab = "profile" }: { defaultTab?: "profile" | "billing" }) => (
+// Step 30a.2 (F3-3): default landing tab is now "billing". The bare /account
+// route still passes defaultTab="profile" via App.tsx for backwards compat;
+// /account/billing remains the canonical post-login surface for Sarah.
+const Account = ({ defaultTab = "billing" }: { defaultTab?: "profile" | "billing" }) => (
   <SiteLayout>
     <Seo
       title="Account — VantageMind AI"
       description="Account management for Luciel customers."
       path={defaultTab === "billing" ? "/account/billing" : "/account"}
+      noIndex
     />
     <section className="border-b border-border">
       <div className="container-narrow pt-28 pb-24 md:pt-40 md:pb-32">
@@ -270,7 +292,7 @@ const Account = ({ defaultTab = "profile" }: { defaultTab?: "profile" | "billing
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="billing">Billing</TabsTrigger>
           </TabsList>
-          <TabsContent value="profile"><Placeholder label="Profile" /></TabsContent>
+          <TabsContent value="profile"><ProfilePanel /></TabsContent>
           <TabsContent value="billing"><BillingTab /></TabsContent>
         </Tabs>
       </div>

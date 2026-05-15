@@ -582,6 +582,7 @@ const Dashboard = () => {
         title="Dashboard — VantageMind AI"
         description="Build and deploy your Luciel instances."
         path="/dashboard"
+        noIndex
       />
       <section className="border-b border-border">
         <div className="container-narrow pt-28 pb-24 md:pt-40 md:pb-32">

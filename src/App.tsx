@@ -8,6 +8,7 @@ import Index from "./pages/Index.tsx";
 import Luciel from "./pages/Luciel.tsx";
 import Platform from "./pages/Platform.tsx";
 import Trust from "./pages/Trust.tsx";
+import Security from "./pages/Security.tsx";
 import Doctrine from "./pages/Doctrine.tsx";
 import About from "./pages/About.tsx";
 import Privacy from "./pages/Privacy.tsx";
@@ -73,7 +74,7 @@ const App = () => (
                 <Route path="/dashboard/luciels/:pk" element={<LucielInstanceDetail />} />
                 <Route path="/legal/terms" element={<LegalTerms />} />
                 <Route path="/legal/privacy" element={<LegalPrivacy />} />
-                <Route path="/security" element={<Navigate to="/trust" replace />} />
+                <Route path="/security" element={<Security />} />
                 {/* Legacy redirects */}
                 <Route path="/luciel" element={<Navigate to="/products/luciel" replace />} />
                 <Route path="/products" element={<Navigate to="/products/luciel" replace />} />

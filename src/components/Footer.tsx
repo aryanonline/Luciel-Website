@@ -16,6 +16,7 @@ export const Footer = () => (
             <li><Link to="/products/luciel" className="hover:text-foreground">Luciel</Link></li>
             <li><Link to="/platform" className="hover:text-foreground">Platform</Link></li>
             <li><Link to="/trust" className="hover:text-foreground">Trust</Link></li>
+            <li><Link to="/security" className="hover:text-foreground">Security</Link></li>
             <li><Link to="/pricing" className="hover:text-foreground">Pricing</Link></li>
           </ul>
         </div>
@@ -25,7 +26,7 @@ export const Footer = () => (
           <div className="eyebrow mb-4">Company</div>
           <ul className="space-y-3 text-sm text-muted-foreground">
             <li><Link to="/about" className="hover:text-foreground">About</Link></li>
-            <li><Link to="/products/luciel" className="hover:text-foreground">How Luciel thinks</Link></li>
+            <li><Link to="/doctrine" className="hover:text-foreground">How Luciel thinks</Link></li>
             <li><Link to="/contact" className="hover:text-foreground">Contact</Link></li>
           </ul>
         </div>

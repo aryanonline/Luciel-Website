@@ -42,7 +42,7 @@ const pillars = [
     n: "06",
     name: "Channels and integrations",
     body:
-      "One reasoning identity, available wherever the work happens — chat, email, embedded surfaces, and direct integrations into the systems your team already uses. Context follows the conversation across channels.",
+      "One reasoning identity, available wherever the work happens. The chat widget and the programmatic API are live today; voice, SMS, and email arrive with our next release. Same scope policy, same memory, same audit trail across every channel — context follows the conversation.",
   },
 ];
 

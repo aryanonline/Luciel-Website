@@ -16,7 +16,7 @@ const LegalTerms = () => (
   <SiteLayout>
     <Seo
       title="Terms of Service — VantageMind AI"
-      description="Terms of Service for VantageMind AI and the Luciel platform."
+      description="Terms of Service governing use of VantageMind AI products, including the Luciel deployment platform. Ontario, Canada law."
       path="/legal/terms"
     />
     <section className="border-b border-border">

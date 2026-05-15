@@ -57,7 +57,10 @@ const Onboarding = () => {
     setState({ kind: "claiming" });
     claimCheckoutSession(sessionId)
       .then((res) => {
-        track({ name: "onboarding_claim_succeeded", payload: { tier: "individual" } });
+        // We don't know the resolved tier at this layer yet (the claim
+        // response only carries `state` and `email_sent_to`); emit the
+        // outcome state instead of hard-coding "individual" (F5-2).
+        track({ name: "onboarding_claim_succeeded", payload: { state: res.state } });
         if (res.state === "ready") {
           setState({ kind: "ready", email: res.email_sent_to });
         } else if (res.state === "pending") {
@@ -82,6 +85,7 @@ const Onboarding = () => {
         title="Welcome — VantageMind AI"
         description="Your Luciel deployment is being prepared. Check your email for the sign-in link."
         path="/onboarding"
+        noIndex
       />
       <section className="border-b border-border">
         <div className="container-narrow pt-28 pb-24 md:pt-40 md:pb-32">
@@ -109,8 +113,8 @@ const Onboarding = () => {
               </p>
               <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
                 Your Luciel deployment is being provisioned in the background and will be
-                ready the first time you sign in. Your card isn't charged until your 14-day
-                trial ends, and you can cancel from your account at any time.
+                ready the first time you sign in. Your card isn't charged until your trial
+                ends, and you can cancel from your account at any time.
               </p>
               <div className="mt-10 flex gap-3">
                 <Button asChild variant="ghost"><Link to="/">Back to home</Link></Button>
@@ -158,19 +162,21 @@ const Onboarding = () => {
             </>
           ) : (
             // no_session: someone hit /onboarding directly without a Checkout
-            // hand-off. Keep the previous "coming soon" copy as a graceful
-            // fallback rather than throwing.
+            // hand-off. Send them to /pricing rather than showing a vague
+            // "coming soon" message (F1-5).
             <>
               <h1 className="font-display mt-6 max-w-3xl text-5xl leading-[1.05] tracking-tight md:text-7xl">
-                Your Luciel deployment is being prepared.
+                Looks like you landed here without a checkout.
               </h1>
               <p className="mt-7 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-                We'll guide you through choosing your deployment shape — company-wide,
-                department-by-department, or per-professional. Hold tight; this flow lands with
-                our next release.
+                The Onboarding page is the landing pad after a successful Stripe checkout.
+                If you're new, start with the pricing page and pick the tier that fits your
+                deployment shape. If you've already paid, open the most recent sign-in email
+                we sent you.
               </p>
               <div className="mt-10 flex gap-3">
-                <Button asChild variant="ghost"><Link to="/account">Go to account</Link></Button>
+                <Button asChild><Link to="/pricing">See pricing</Link></Button>
+                <Button asChild variant="ghost"><Link to="/account/billing">Go to billing</Link></Button>
               </div>
             </>
           )}

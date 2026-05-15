@@ -72,7 +72,7 @@ const Login = () => {
 
   return (
     <SiteLayout>
-      <Seo title="Signing you in — VantageMind AI" description="Magic-link sign-in." path="/login" />
+      <Seo title="Signing you in — VantageMind AI" description="Magic-link sign-in." path="/login" noIndex />
       <section className="border-b border-border">
         <div className="container-narrow pt-28 pb-24 md:pt-40 md:pb-32">
           <Eyebrow>SIGN IN</Eyebrow>
