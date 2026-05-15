@@ -37,7 +37,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
-import { API_BASE_URL } from "@/lib/billing";
+import { API_BASE_URL, WIDGET_CDN_URL } from "@/lib/billing";
 import {
   AdminApiError,
   EmbedKey,
@@ -370,9 +370,15 @@ const DeployTab = ({ instance }: { instance: LucielInstance }) => {
     }
   };
 
+  // D-widget-snippet-url-points-to-api-not-cdn-2026-05-14:
+  // The embed snippet's <script src> must point at the CloudFront-fronted
+  // S3 bucket that hosts the widget bundle (WIDGET_CDN_URL), NOT at the
+  // FastAPI ALB (API_BASE_URL). See src/lib/billing.ts for the full
+  // rationale. API_BASE_URL is still imported because it's used at line
+  // ~188 for the in-page widget-creation fetch, which IS a backend call.
   const snippet = minted
     ? `<script
-  src="${API_BASE_URL}/widget.js"
+  src="${WIDGET_CDN_URL}/widget.js"
   data-luciel-key="${minted.apiKey}"
   async defer></script>`
     : "";

@@ -24,6 +24,29 @@ const env = (import.meta as { env?: Record<string, string | undefined> }).env ??
 export const API_BASE_URL: string =
   env.VITE_API_BASE_URL?.replace(/\/+$/, "") || "https://api.vantagemind.ai";
 
+/**
+ * D-widget-snippet-url-points-to-api-not-cdn-2026-05-14:
+ *   The customer-facing embed snippet shown on LucielInstanceDetail copies
+ *   a `<script src="...">` tag pointing at the widget bundle. Pre-fix it
+ *   resolved to `${API_BASE_URL}/widget.js`, which hits the FastAPI ALB
+ *   instead of the CloudFront-fronted S3 bucket where the widget bundle
+ *   actually lives. Two reasons that's wrong: (1) the backend has no
+ *   `/widget.js` route so embeds 404 in production, (2) even if the route
+ *   existed, serving a static JS bundle from a cold ALB is the wrong
+ *   delivery shape (no edge caching, no immutable versioning, every
+ *   embed-page load adds ALB load).
+ *
+ *   The widget bundle is hosted at `https://d1t84i96t71fsi.cloudfront.net`
+ *   (Amplify-managed CloudFront distribution fronting the S3 origin
+ *   prepared in Step 27a). At build time the env var `VITE_WIDGET_CDN_URL`
+ *   can override this default for staging / preview deploys. The default
+ *   bakes the prod CloudFront hostname so a missing env-var produces a
+ *   working embed snippet, not a broken one (same fail-safe shape as
+ *   `API_BASE_URL`).
+ */
+export const WIDGET_CDN_URL: string =
+  env.VITE_WIDGET_CDN_URL?.replace(/\/+$/, "") || "https://d1t84i96t71fsi.cloudfront.net";
+
 export const STRIPE_PUBLISHABLE_KEY: string | undefined = env.VITE_STRIPE_PUBLISHABLE_KEY;
 
 /** Single source of truth for "is billing wired up on this build?" */
