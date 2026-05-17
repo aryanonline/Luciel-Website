@@ -18,8 +18,13 @@ export type AnalyticsEvent =
   | { name: "onboarding_started"; payload: { session_id: string | null; has_session?: boolean } }
   | { name: "onboarding_claim_succeeded"; payload: { tier: Tier } }
   | { name: "onboarding_claim_failed"; payload: { reason: string } }
-  | { name: "login_succeeded"; payload?: Record<string, never> }
-  | { name: "login_failed"; payload: { reason: string } }
+  | { name: "login_succeeded"; payload?: { path?: string } }
+  | { name: "login_failed"; payload: { reason: string; path?: string } }
+  // Step 30a.3 password-auth events
+  | { name: "set_password_succeeded"; payload?: Record<string, never> }
+  | { name: "set_password_failed"; payload: { reason: string } }
+  | { name: "forgot_password_submitted"; payload?: Record<string, never> }
+  | { name: "forgot_password_network_error"; payload?: Record<string, never> }
   | { name: "logout_succeeded"; payload?: Record<string, never> }
   | { name: "billing_portal_opened"; payload?: Record<string, never> }
   | { name: "first_conversation"; payload?: Record<string, unknown> }

@@ -19,6 +19,8 @@ import Account from "./pages/Account.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import LucielInstanceDetail from "./pages/LucielInstanceDetail.tsx";
 import Login from "./pages/Login.tsx";
+import ForgotPassword from "./pages/ForgotPassword.tsx";
+import SetPassword from "./pages/SetPassword.tsx";
 import LegalTerms from "./pages/LegalTerms.tsx";
 import LegalPrivacy from "./pages/LegalPrivacy.tsx";
 import Contact from "./pages/Contact.tsx";
@@ -68,6 +70,8 @@ const App = () => (
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/auth/set-password" element={<SetPassword />} />
                 <Route path="/account" element={<Account defaultTab="profile" />} />
                 <Route path="/account/billing" element={<Account defaultTab="billing" />} />
                 <Route path="/dashboard" element={<Dashboard />} />

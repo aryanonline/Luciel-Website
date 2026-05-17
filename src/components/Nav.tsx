@@ -11,6 +11,7 @@ const links: NavLink[] = [
   { to: "/platform", label: "Platform" },
   { to: "/trust", label: "Trust" },
   { to: "/pricing", label: "Pricing" },
+  { to: "/login", label: "Log in" },
   { to: "/about", label: "Company" },
   { to: "/contact", label: "Contact" },
 ];
