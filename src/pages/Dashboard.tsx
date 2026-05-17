@@ -40,10 +40,14 @@ import {
   Agent,
   LucielInstance,
   TenantDashboard,
+  UserInvite,
+  createInvite,
   getTenantDashboard,
-  inviteTeammate,
   listAgents,
+  listInvites,
   listLucielInstances,
+  resendInvite,
+  revokeInvite,
 } from "@/lib/admin";
 import { CreateLucielForm } from "@/components/admin/CreateLucielForm";
 import { Input } from "@/components/ui/input";
@@ -341,13 +345,24 @@ const LucielsTab = ({
 };
 
 // --------------------------------------------------------------------- //
-// Team tab — Step 30a.1 (Team / Company tiers only)
+// Team tab — Step 30a.4 (Team / Company tiers only)
 // --------------------------------------------------------------------- //
 //
-// Lists active Agents on the tenant + an "Add teammate" form that POSTs
-// to /api/v1/admin/luciel-instances with teammate_email set. The backend
-// resolves-or-creates the User, mints an Agent + ScopeAssignment, and
-// sends a magic link in a single audited transaction.
+// Step 30a.1 carved this tab with an "Add teammate" form that POSTed to
+// /api/v1/admin/luciel-instances with teammate_email set. That overload
+// is deprecated as of Step 30a.4; the first-class UserInvite lifecycle
+// (POST/GET/RESEND/DELETE /api/v1/admin/invites) is the canonical path.
+//
+// Surface now shows two lists:
+//   * Pending invites -- mint-time row from POST /admin/invites, with
+//     resend / revoke actions and an expires-in countdown (7-day TTL).
+//   * Accepted teammates -- Agents that came from a redeemed invite.
+//
+// Redemption is handled by the existing /auth/set-password page; the
+// invite-purpose JWT in the welcome email lands the new teammate there
+// and SetPassword.tsx happily redeems it (the backend route routes on
+// `purpose='invite'` and calls invite_service.redeem_invite). No new
+// page on the website -- only the team-tab UI changes.
 
 const TeamTab = ({
   tenantId,
@@ -357,11 +372,13 @@ const TeamTab = ({
   tier: SubscriptionStatus["tier"];
 }) => {
   const [members, setMembers] = useState<Agent[] | null>(null);
+  const [invites, setInvites] = useState<UserInvite[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [busyInviteId, setBusyInviteId] = useState<string | null>(null);
 
   const refresh = () => {
     setError(null);
@@ -373,6 +390,18 @@ const TeamTab = ({
             ? err.message
             : "Couldn't load your team. Try refreshing.";
         setError(msg);
+      });
+    listInvites()
+      .then(setInvites)
+      .catch((err: unknown) => {
+        // Invites failing is non-fatal -- the team list is still useful.
+        // Surface as toast, leave invites at null so the section is hidden.
+        const msg =
+          err instanceof AdminApiError
+            ? err.message
+            : "Couldn't load pending invites.";
+        toast.error(msg);
+        setInvites([]);
       });
   };
 
@@ -392,12 +421,13 @@ const TeamTab = ({
     }
     setSubmitting(true);
     try {
-      await inviteTeammate({
-        tenant_id: tenantId,
-        // Backend's default domain for self-serve tenants.
-        domain_id: "general",
-        teammate_email: email,
+      await createInvite({
+        invited_email: email,
+        role: "teammate",
         display_name: name,
+        // tenant_id + domain_id default to the cookied user's active
+        // scope on the backend; passing them is optional and we omit
+        // them so the backend stays the source of truth.
       });
       toast.success(`Invited ${email}. We sent them a sign-in link.`);
       setInviteEmail("");
@@ -406,13 +436,54 @@ const TeamTab = ({
       refresh();
     } catch (err) {
       const isApi = err instanceof AdminApiError;
-      // 402 = tier-scope guard tripped (cap exceeded / scope not permitted).
+      // 409 = duplicate pending invite OR pending-cap exceeded.
+      // 410 = invite expired (shouldn't happen on create, but defensive).
       const message = isApi
         ? err.message
         : "Couldn't add teammate. Try again.";
       toast.error(message);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const onResend = async (inviteId: string, email: string) => {
+    setBusyInviteId(inviteId);
+    try {
+      const res = await resendInvite(inviteId);
+      if (res.sent) {
+        toast.success(`Re-sent invite to ${email}.`);
+      } else {
+        toast.message(
+          `Re-issued invite for ${email} (email was rate-limited).`,
+        );
+      }
+      refresh();
+    } catch (err) {
+      const msg =
+        err instanceof AdminApiError
+          ? err.message
+          : "Couldn't resend invite. Try again.";
+      toast.error(msg);
+    } finally {
+      setBusyInviteId(null);
+    }
+  };
+
+  const onRevoke = async (inviteId: string, email: string) => {
+    setBusyInviteId(inviteId);
+    try {
+      await revokeInvite(inviteId);
+      toast.success(`Revoked invite for ${email}.`);
+      refresh();
+    } catch (err) {
+      const msg =
+        err instanceof AdminApiError
+          ? err.message
+          : "Couldn't revoke invite. Try again.";
+      toast.error(msg);
+    } finally {
+      setBusyInviteId(null);
     }
   };
 
@@ -481,6 +552,68 @@ const TeamTab = ({
         <Card>
           <p className="text-base text-muted-foreground">Loading…</p>
         </Card>
+      )}
+
+      {/* Pending invites -- Step 30a.4. Only render the section when
+          there is at least one pending row; revoked / accepted invites
+          live in the audit chain, not the UI. */}
+      {!error && invites !== null && invites.filter((i) => i.status === "pending").length > 0 && (
+        <div className="space-y-3">
+          <Eyebrow>Pending invites</Eyebrow>
+          <ul
+            data-testid="pending-invites-list"
+            className="divide-y divide-border rounded-xl border border-border bg-card"
+          >
+            {invites
+              .filter((i) => i.status === "pending")
+              .map((inv) => {
+                const expiresAt = new Date(inv.expires_at);
+                const expiresInDays = Math.max(
+                  0,
+                  Math.floor(
+                    (expiresAt.getTime() - Date.now()) /
+                      (1000 * 60 * 60 * 24),
+                  ),
+                );
+                const busy = busyInviteId === inv.id;
+                return (
+                  <li
+                    key={inv.id}
+                    data-testid={`pending-invite-${inv.id}`}
+                    className="flex items-center justify-between gap-4 px-6 py-4"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate text-base text-foreground">
+                        {inv.invited_email}
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        Invited · expires in {expiresInDays} day
+                        {expiresInDays === 1 ? "" : "s"}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={busy}
+                        onClick={() => onResend(inv.id, inv.invited_email)}
+                      >
+                        {busy ? "…" : "Resend"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={busy}
+                        onClick={() => onRevoke(inv.id, inv.invited_email)}
+                      >
+                        {busy ? "…" : "Revoke"}
+                      </Button>
+                    </div>
+                  </li>
+                );
+              })}
+          </ul>
+        </div>
       )}
 
       {!error && members !== null && members.length === 0 && (

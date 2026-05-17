@@ -293,6 +293,13 @@ export interface InviteTeammateRequest {
   description?: string;
 }
 
+/**
+ * @deprecated Step 30a.4 -- use `createInvite` instead. The
+ * teammate_email overload on POST /admin/luciel-instances is kept
+ * with a deprecation warning until Step 30a.5; the first-class
+ * invite lifecycle (UserInvite row + 7-day TTL + resend/revoke +
+ * proper audit chain) lives at /api/v1/admin/invites.
+ */
 export async function inviteTeammate(
   payload: InviteTeammateRequest,
 ): Promise<LucielInstance> {
@@ -307,4 +314,98 @@ export async function inviteTeammate(
     display_name: payload.display_name,
     description: payload.description,
   });
+}
+
+// --------------------------------------------------------------------- //
+// Teammate invites (Step 30a.4 -- first-class UserInvite lifecycle)
+// --------------------------------------------------------------------- //
+//
+// Step 30a.4 replaces the Step 30a.1 teammate_email overload on
+// POST /admin/luciel-instances with a dedicated invite-lifecycle
+// surface:
+//
+//   POST   /api/v1/admin/invites               -- mint invite + email
+//   GET    /api/v1/admin/invites               -- list pending+accepted
+//   POST   /api/v1/admin/invites/{id}/resend   -- rotate jti + re-email
+//   DELETE /api/v1/admin/invites/{id}          -- revoke pending invite
+//
+// Tenant + domain default to the cookied user's active scope; both
+// are optional on the request body. Cross-tenant invites are rejected
+// at the route layer (403).
+//
+// Redemption is handled by the existing POST /api/v1/auth/set-password
+// route, which now branches on `purpose='invite'` in the JWT payload
+// and calls invite_service.redeem_invite (User + Agent +
+// ScopeAssignment + audit row in one txn). No new auth route.
+
+export type InviteStatus = "pending" | "accepted" | "revoked" | "expired";
+
+export interface UserInvite {
+  id: string;
+  tenant_id: string;
+  domain_id: string;
+  invited_email: string;
+  display_name: string | null;
+  role: string;
+  status: InviteStatus;
+  invited_by_user_id: string;
+  invited_by_email: string | null;
+  token_jti: string;
+  expires_at: string;
+  accepted_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateInviteRequest {
+  invited_email: string;
+  role?: string;
+  /** Defaults to the cookied user's active tenant when omitted. */
+  tenant_id?: string;
+  /** Defaults to the cookied user's active domain when omitted. */
+  domain_id?: string;
+  display_name?: string;
+}
+
+export interface InviteResendResponse {
+  invite: UserInvite;
+  /** Whether a new email was actually sent (false if rate-limited). */
+  sent: boolean;
+}
+
+export interface InviteRevokeResponse {
+  invite: UserInvite;
+}
+
+export async function createInvite(
+  payload: CreateInviteRequest,
+): Promise<UserInvite> {
+  return request<UserInvite>(
+    "POST",
+    `/api/v1/admin/invites`,
+    payload as unknown as Record<string, unknown>,
+  );
+}
+
+export async function listInvites(): Promise<UserInvite[]> {
+  return request<UserInvite[]>("GET", `/api/v1/admin/invites`);
+}
+
+export async function resendInvite(
+  inviteId: string,
+): Promise<InviteResendResponse> {
+  return request<InviteResendResponse>(
+    "POST",
+    `/api/v1/admin/invites/${inviteId}/resend`,
+  );
+}
+
+export async function revokeInvite(
+  inviteId: string,
+): Promise<InviteRevokeResponse> {
+  return request<InviteRevokeResponse>(
+    "DELETE",
+    `/api/v1/admin/invites/${inviteId}`,
+  );
 }

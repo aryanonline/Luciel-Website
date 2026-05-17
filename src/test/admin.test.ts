@@ -254,3 +254,141 @@ describe("AdminApiError", () => {
     });
   });
 });
+
+// --------------------------------------------------------------------- //
+// Step 30a.4 -- teammate invites (createInvite / listInvites /          //
+// resendInvite / revokeInvite).                                         //
+// --------------------------------------------------------------------- //
+
+import {
+  createInvite,
+  listInvites,
+  resendInvite,
+  revokeInvite,
+} from "@/lib/admin";
+
+const inviteFixture = {
+  id: "00000000-0000-0000-0000-000000000001",
+  tenant_id: "t_test",
+  domain_id: "general",
+  invited_email: "teammate@example.com",
+  display_name: "Teammate",
+  role: "teammate",
+  status: "pending" as const,
+  invited_by_user_id: "00000000-0000-0000-0000-000000000abc",
+  invited_by_email: "owner@example.com",
+  token_jti: "jti_abc",
+  expires_at: "2030-01-01T00:00:00Z",
+  accepted_at: null,
+  revoked_at: null,
+  created_at: "2026-05-17T00:00:00Z",
+  updated_at: "2026-05-17T00:00:00Z",
+};
+
+describe("createInvite", () => {
+  it("POSTs JSON body to /api/v1/admin/invites and returns 201 invite row", async () => {
+    fetchMock.mockResolvedValueOnce(createdResponse(inviteFixture));
+
+    const res = await createInvite({
+      invited_email: "teammate@example.com",
+      role: "teammate",
+      display_name: "Teammate",
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("/api/v1/admin/invites");
+    expect(init.method).toBe("POST");
+    expect(init.credentials).toBe("include");
+    expect(init.headers).toMatchObject({ "Content-Type": "application/json" });
+    expect(JSON.parse(init.body)).toMatchObject({
+      invited_email: "teammate@example.com",
+      role: "teammate",
+      display_name: "Teammate",
+    });
+    expect(res.status).toBe("pending");
+    expect(res.invited_email).toBe("teammate@example.com");
+  });
+
+  it("surfaces 409 (duplicate pending) as AdminApiError", async () => {
+    fetchMock.mockResolvedValueOnce(
+      errorResponse(
+        409,
+        "A pending invite for this email already exists under this tenant.",
+      ),
+    );
+    await expect(
+      createInvite({ invited_email: "dupe@example.com" }),
+    ).rejects.toMatchObject({
+      status: 409,
+      message: expect.stringContaining("pending invite"),
+    });
+  });
+
+  it("surfaces 409 (pending-cap exceeded) as AdminApiError", async () => {
+    fetchMock.mockResolvedValueOnce(
+      errorResponse(409, "Pending-invite cap exceeded (10/10)."),
+    );
+    await expect(
+      createInvite({ invited_email: "11th@example.com" }),
+    ).rejects.toMatchObject({
+      status: 409,
+      message: expect.stringContaining("cap exceeded"),
+    });
+  });
+});
+
+describe("listInvites", () => {
+  it("GETs /api/v1/admin/invites with credentials and parses array", async () => {
+    fetchMock.mockResolvedValueOnce(okResponse([inviteFixture]));
+    const res = await listInvites();
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("/api/v1/admin/invites");
+    expect(init.method).toBe("GET");
+    expect(init.credentials).toBe("include");
+    expect(res).toHaveLength(1);
+    expect(res[0].status).toBe("pending");
+  });
+});
+
+describe("resendInvite", () => {
+  it("POSTs to /api/v1/admin/invites/{id}/resend (no body) and returns row", async () => {
+    fetchMock.mockResolvedValueOnce(
+      okResponse({ invite: inviteFixture, sent: true }),
+    );
+    const res = await resendInvite(inviteFixture.id);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain(
+      `/api/v1/admin/invites/${inviteFixture.id}/resend`,
+    );
+    expect(init.method).toBe("POST");
+    expect(init.credentials).toBe("include");
+    // No-body resend: body must be undefined (no Content-Type either).
+    expect(init.body).toBeUndefined();
+    expect(res.sent).toBe(true);
+    expect(res.invite.id).toBe(inviteFixture.id);
+  });
+});
+
+describe("revokeInvite", () => {
+  it("DELETEs /api/v1/admin/invites/{id} and returns revoked row", async () => {
+    fetchMock.mockResolvedValueOnce(
+      okResponse({
+        invite: { ...inviteFixture, status: "revoked", revoked_at: "2026-05-17T00:01:00Z" },
+      }),
+    );
+    const res = await revokeInvite(inviteFixture.id);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain(`/api/v1/admin/invites/${inviteFixture.id}`);
+    expect(init.method).toBe("DELETE");
+    expect(init.credentials).toBe("include");
+    expect(res.invite.status).toBe("revoked");
+  });
+
+  it("surfaces 404 when the invite was already revoked", async () => {
+    fetchMock.mockResolvedValueOnce(errorResponse(404, "Invite not found."));
+    await expect(revokeInvite(inviteFixture.id)).rejects.toMatchObject({
+      status: 404,
+    });
+  });
+});
