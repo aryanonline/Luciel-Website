@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Check } from "lucide-react";
 import { SiteLayout } from "@/components/SiteLayout";
 import { Seo } from "@/components/Seo";
@@ -20,12 +20,15 @@ interface TierCard {
   audience: string;
   bullets: string[];
   /**
-   * Step 30a.1 — all three tiers are now self-serve on Stripe. Company
-   * keeps a primary "Book a demo" CTA with a hidden "Skip the call →"
-   * link available behind ?showSkip=1 so we can quietly send qualified
-   * leads straight to checkout without leaking the path on the public page.
+   * Step 30a.5 — all three tiers are now self-serve on Stripe at parity.
+   * Company tier no longer requires a sales touch: the buyer lands
+   * straight in the Company tab of /dashboard after Checkout and builds
+   * Domains, invites department leads, and onboards agents without
+   * founder involvement. "Book a demo" remains the secondary link on
+   * every tier as the discreet sales path the Step 30a.1 hybrid framing
+   * committed to.
    */
-  primary: "checkout" | "demo-with-skip";
+  primary: "checkout";
   trialCopy: string;
   highlighted?: boolean;
 }
@@ -77,7 +80,7 @@ const tiers: TierCard[] = [
       "Immutable audit trail across every scope",
       "7-day free trial on monthly",
     ],
-    primary: "demo-with-skip",
+    primary: "checkout",
     trialCopy: "7-day free trial",
   },
 ];
@@ -110,13 +113,12 @@ const faqs: [string, string][] = [
 ];
 
 const Pricing = () => {
-  const [params] = useSearchParams();
-  // Step 30a.1: Company tier's primary CTA stays "Book a demo" on the
-  // public page. The "Skip the call →" link to self-serve checkout is
-  // gated behind ?showSkip=1 so we can hand it to qualified leads
-  // without exposing the bypass to general traffic.
-  const showCompanySkip = useMemo(() => params.get("showSkip") === "1", [params]);
-
+  // Step 30a.5 — Company tier is now peer-self-serve with Individual
+  // and Team. The Step 30a.1 ``?showSkip=1`` bypass on Company has
+  // been retired: Checkout is the public-facing primary CTA on every
+  // tier, with "Book a demo" as the secondary affordance below. This
+  // closes the Pricing.tsx leg of
+  // ``D-marketing-product-boundary-soft-2026-05-16``.
   const [cadence, setCadence] = useState<Cadence>("monthly");
 
   useEffect(() => {
@@ -266,100 +268,39 @@ const Pricing = () => {
                     </ul>
 
                     <div className="mt-auto pt-8">
-                      {t.primary === "checkout" ? (
-                        <>
-                          {/* Step 30a.1: Individual + Team are now both
-                              self-serve. Forwards cadence so the backend
-                              resolves to the correct Stripe Price. Falls
-                              back to waitlist when VITE_STRIPE_PUBLISHABLE_KEY
-                              is unset on this build. */}
-                          {/*
-                            Step 30a.2-pilot Commit 3d — pilot-eligibility
-                            gating on the primary CTA label.
+                      {/* Step 30a.5: all three tiers are now peer self-serve.
+                          The primary CTA is self-serve Checkout; "Book a demo"
+                          stays as the secondary link below for buyers who
+                          want a sales conversation before paying. Falls back
+                          to waitlist when VITE_STRIPE_PUBLISHABLE_KEY is unset
+                          on this build.
 
-                            Mirrors Signup.tsx::pilotEligibleSurface: the
-                            $100 / 90-day pilot is a MONTHLY-ONLY offer per
-                            CANONICAL_RECAP §14 ¶273. Annual buyers see the
-                            unchanged "Start annual plan" label. The pilot's
-                            first-time-customer eligibility is hard-enforced
-                            at the backend gate
-                            (BillingService.is_first_time_customer) — we
-                            don't probe here because (a) the email isn't
-                            entered yet on the Pricing page and (b) the
-                            backend gate is the only trustworthy source. A
-                            repeat customer who clicks through gets routed
-                            to the standard subscription path server-side
-                            without ever seeing this label drift.
-
-                            Company tier never reaches this branch (its
-                            ``primary === 'demo-with-skip'``) so we don't
-                            need to exclude it explicitly here — the
-                            outer ternary already does that.
-                          */}
-                          <WaitlistButton
-                            tier={t.id}
-                            mode="checkout"
-                            cadence={cadence}
-                            className="w-full"
-                            sourcePage="/pricing"
-                          >
-                            {cadence === "monthly" ? "Start 90-day pilot" : "Start annual plan"}
-                          </WaitlistButton>
-                          <Link
-                            to={`/contact?tier=${t.id}`}
-                            onClick={() => trackCta("Book a demo", "/pricing", t.id)}
-                            className="mt-4 block text-center text-sm text-muted-foreground hover:text-foreground"
-                          >
-                            Book a demo
-                          </Link>
-                        </>
-                      ) : (
-                        <>
-                          {/* Company tier — primary stays "Book a demo".
-                              The "Skip the call →" link to self-serve
-                              checkout is only rendered when ?showSkip=1
-                              is present, so we can quietly route
-                              qualified leads without exposing the
-                              bypass on the public page. */}
-                          <Button asChild className="w-full">
-                            <Link
-                              to={`/contact?tier=${t.id}`}
-                              onClick={() => {
-                                track({ name: "pricing_tier_clicked", payload: { tier: t.id } });
-                                trackCta("Book a demo", "/pricing", t.id);
-                              }}
-                            >
-                              Book a demo
-                            </Link>
-                          </Button>
-                          {showCompanySkip ? (
-                            <div className="mt-4 text-center">
-                              <WaitlistButton
-                                tier={t.id}
-                                mode="checkout"
-                                cadence={cadence}
-                                variant="ghost"
-                                sourcePage="/pricing"
-                                className="text-sm text-muted-foreground hover:text-foreground"
-                              >
-                                Skip the call →
-                              </WaitlistButton>
-                            </div>
-                          ) : (
-                            <div className="mt-4 text-center">
-                              <WaitlistButton
-                                tier={t.id}
-                                mode="waitlist"
-                                variant="ghost"
-                                sourcePage="/pricing"
-                                className="text-sm text-muted-foreground hover:text-foreground"
-                              >
-                                Join the waitlist
-                              </WaitlistButton>
-                            </div>
-                          )}
-                        </>
-                      )}
+                          Cadence threads into Checkout so the backend resolves
+                          to the correct Stripe Price (per-tier monthly vs.
+                          annual). The monthly label promotes the 90-day pilot
+                          (mirrors Signup.tsx::pilotEligibleSurface); the
+                          pilot's first-time-customer eligibility is hard
+                          enforced at BillingService.is_first_time_customer so
+                          a repeat customer who clicks through is routed to
+                          the standard subscription path server-side without
+                          ever seeing the label drift. Annual buyers see the
+                          unchanged "Start annual plan" label. */}
+                      <WaitlistButton
+                        tier={t.id}
+                        mode="checkout"
+                        cadence={cadence}
+                        className="w-full"
+                        sourcePage="/pricing"
+                      >
+                        {cadence === "monthly" ? "Start 90-day pilot" : "Start annual plan"}
+                      </WaitlistButton>
+                      <Link
+                        to={`/contact?tier=${t.id}`}
+                        onClick={() => trackCta("Book a demo", "/pricing", t.id)}
+                        className="mt-4 block text-center text-sm text-muted-foreground hover:text-foreground"
+                      >
+                        Book a demo
+                      </Link>
                     </div>
                   </div>
                 </div>
