@@ -38,12 +38,17 @@ import {
 import {
   AdminApiError,
   Agent,
+  DOMAIN_SLUG_REGEX,
+  DomainConfig,
   LucielInstance,
   TenantDashboard,
   UserInvite,
+  createDomainSelfServe,
   createInvite,
+  deactivateDomainSelfServe,
   getTenantDashboard,
   listAgents,
+  listDomainsSelfServe,
   listInvites,
   listLucielInstances,
   resendInvite,
@@ -339,6 +344,278 @@ const LucielsTab = ({
             </li>
           ))}
         </ul>
+      )}
+    </div>
+  );
+};
+
+// --------------------------------------------------------------------- //
+// Company tab — Step 30a.5 (Company tier + tenant_admin/owner only)
+// --------------------------------------------------------------------- //
+//
+// The Company tab is the org-building surface for a Company customer.
+// Visibility gate (locked in design doc §11 Q5, resolved 2026-05-18):
+//
+//   tier === "company" AND role IN ("tenant_admin", "owner")
+//
+// Gating on tier alone would leak Domain creation/deactivation to an
+// invited department lead, breaking the design's intended chain of
+// authority. The role is sourced off the cookied user's active
+// ScopeAssignment via the active_role field on /api/v1/billing/me.
+//
+// Acceptance test target (design §13.1 T1): a Company customer pays
+// $1,000, opens /dashboard, creates two Domains, invites two leads,
+// each lead invites two agents. Six invite emails, zero founder
+// involvement -- this tab carries the Domain-creation half of that
+// flow; the Team tab carries the invite-to-the-domain half.
+
+const CompanyTab = ({
+  tenantId,
+}: {
+  tenantId: string;
+}) => {
+  const [domains, setDomains] = useState<DomainConfig[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [slug, setSlug] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [description, setDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [busyDomainId, setBusyDomainId] = useState<string | null>(null);
+
+  const refresh = () => {
+    setError(null);
+    listDomainsSelfServe()
+      .then(setDomains)
+      .catch((err: unknown) => {
+        const msg =
+          err instanceof AdminApiError
+            ? err.message
+            : "Couldn't load your domains. Try refreshing.";
+        setError(msg);
+      });
+  };
+
+  useEffect(refresh, [tenantId]);
+
+  const onCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const slugTrim = slug.trim().toLowerCase();
+    const nameTrim = displayName.trim();
+    if (!DOMAIN_SLUG_REGEX.test(slugTrim)) {
+      toast.error(
+        "Slug must be lowercase letters, digits, and internal hyphens only.",
+      );
+      return;
+    }
+    if (!nameTrim) {
+      toast.error("Give the domain a display name.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const created = await createDomainSelfServe({
+        domain_id: slugTrim,
+        display_name: nameTrim,
+        description: description.trim() || undefined,
+      });
+      toast.success(`Created domain ${created.domain_id}.`);
+      setSlug("");
+      setDisplayName("");
+      setDescription("");
+      setShowCreate(false);
+      refresh();
+    } catch (err) {
+      // Backend error shapes (design §6.3):
+      //   402 {code:"domain_cap_reached"|"tier_scope_not_allowed"|"no_active_subscription"}
+      //   409 {code:"domain_slug_taken"}
+      //   422 -- slug regex / length
+      const isApi = err instanceof AdminApiError;
+      let message = "Couldn't create the domain. Try again.";
+      if (isApi) {
+        const detail = (err.body as { detail?: unknown })?.detail;
+        if (detail && typeof detail === "object" && "message" in detail) {
+          message = String((detail as { message: unknown }).message);
+        } else {
+          message = err.message;
+        }
+      }
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const onDeactivate = async (domainId: string) => {
+    const confirmed = window.confirm(
+      `Deactivate domain "${domainId}"? This cascades to every Luciel and ` +
+        `agent assigned to it.`,
+    );
+    if (!confirmed) return;
+    setBusyDomainId(domainId);
+    try {
+      await deactivateDomainSelfServe(domainId);
+      toast.success(`Deactivated ${domainId}.`);
+      refresh();
+    } catch (err) {
+      const msg =
+        err instanceof AdminApiError
+          ? err.message
+          : "Couldn't deactivate the domain. Try again.";
+      toast.error(msg);
+    } finally {
+      setBusyDomainId(null);
+    }
+  };
+
+  const activeDomains = (domains ?? []).filter((d) => d.active);
+  const inactiveDomains = (domains ?? []).filter((d) => !d.active);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <Eyebrow>Your company</Eyebrow>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Every department in your company runs in its own Domain. Create
+            one Domain per team — sales, marketing, support — and invite
+            leads from the Team tab.
+          </p>
+        </div>
+        <Button onClick={() => setShowCreate((s) => !s)}>
+          {showCreate ? "Cancel" : "New domain"}
+        </Button>
+      </div>
+
+      {showCreate && (
+        <Card>
+          <form onSubmit={onCreate} className="space-y-4" noValidate>
+            <div className="space-y-1.5">
+              <Label htmlFor="domain-slug">Slug</Label>
+              <Input
+                id="domain-slug"
+                type="text"
+                placeholder="sales"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                autoComplete="off"
+                required
+                minLength={2}
+                maxLength={64}
+                pattern="^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+              />
+              <p className="text-xs text-muted-foreground">
+                Lowercase letters, digits, and internal hyphens. Shown in
+                URLs and audit logs.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="domain-display-name">Display name</Label>
+              <Input
+                id="domain-display-name"
+                type="text"
+                placeholder="Sales"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                autoComplete="off"
+                required
+                maxLength={120}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="domain-description">Description (optional)</Label>
+              <Input
+                id="domain-description"
+                type="text"
+                placeholder="What this team focuses on."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                autoComplete="off"
+                maxLength={500}
+              />
+            </div>
+            <div>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Creating…" : "Create domain"}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      )}
+
+      {error && (
+        <Card>
+          <p className="text-sm text-destructive">{error}</p>
+        </Card>
+      )}
+
+      {domains === null && !error && (
+        <Card>
+          <p className="text-sm text-muted-foreground">Loading domains…</p>
+        </Card>
+      )}
+
+      {domains !== null && activeDomains.length === 0 && (
+        <Card>
+          <p className="text-sm text-muted-foreground">
+            No domains yet. Create one per department so each team's Luciels
+            stay scoped to their work.
+          </p>
+        </Card>
+      )}
+
+      {activeDomains.length > 0 && (
+        <ul className="space-y-3">
+          {activeDomains.map((d) => (
+            <li
+              key={d.id}
+              className="flex items-start justify-between gap-4 rounded-xl border border-border bg-card p-5"
+            >
+              <div>
+                <div className="font-display text-lg text-foreground">
+                  {d.display_name}
+                </div>
+                <div className="mt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  {d.domain_id}
+                </div>
+                {d.description && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {d.description}
+                  </p>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => onDeactivate(d.domain_id)}
+                disabled={busyDomainId === d.domain_id}
+              >
+                {busyDomainId === d.domain_id ? "Deactivating…" : "Deactivate"}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {inactiveDomains.length > 0 && (
+        <details className="mt-6">
+          <summary className="cursor-pointer text-sm text-muted-foreground">
+            {inactiveDomains.length} inactive domain
+            {inactiveDomains.length === 1 ? "" : "s"}
+          </summary>
+          <ul className="mt-3 space-y-2">
+            {inactiveDomains.map((d) => (
+              <li
+                key={d.id}
+                className="rounded-lg border border-border bg-card/60 p-4 text-sm text-muted-foreground"
+              >
+                <span className="font-medium text-foreground">
+                  {d.display_name}
+                </span>{" "}
+                ({d.domain_id})
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </div>
   );
@@ -780,14 +1057,35 @@ const Dashboard = () => {
             )}
 
             {auth.kind === "ok" && (() => {
-              // Step 30a.1: Team tab visible iff tier permits multi-user scope.
+              // Step 30a.5 §11 Q5: tab visibility is tier AND role.
+              //   * Team tab    — tier in (team, company) AND role in
+              //                   (owner, tenant_admin, department_lead)
+              //   * Company tab — tier === company AND role in
+              //                   (owner, tenant_admin)
+              // Gating on tier alone would leak Company-tier Domain
+              // creation to an invited department lead, breaking the
+              // chain of authority. active_role is sourced from the
+              // cookied user's active ScopeAssignment via
+              // /api/v1/billing/me (see app/api/v1/billing.py::me).
               const tier = auth.subscription.tier;
-              const showTeam = tier === "team" || tier === "company";
+              const role = auth.subscription.active_role;
+              const isTeamLikeTier = tier === "team" || tier === "company";
+              const teamRoleAllowed =
+                role === "owner" ||
+                role === "tenant_admin" ||
+                role === "department_lead";
+              const showTeam = isTeamLikeTier && teamRoleAllowed;
+              const companyRoleAllowed =
+                role === "owner" || role === "tenant_admin";
+              const showCompany = tier === "company" && companyRoleAllowed;
               return (
                 <Tabs defaultValue="overview">
                   <TabsList>
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="luciels">Luciels</TabsTrigger>
+                    {showCompany && (
+                      <TabsTrigger value="company">Company</TabsTrigger>
+                    )}
                     {showTeam && <TabsTrigger value="team">Team</TabsTrigger>}
                     <TabsTrigger value="account">Account</TabsTrigger>
                   </TabsList>
@@ -801,6 +1099,11 @@ const Dashboard = () => {
                       instanceCountCap={auth.subscription.instance_count_cap}
                     />
                   </TabsContent>
+                  {showCompany && (
+                    <TabsContent value="company" className="mt-8">
+                      <CompanyTab tenantId={auth.subscription.tenant_id} />
+                    </TabsContent>
+                  )}
                   {showTeam && (
                     <TabsContent value="team" className="mt-8">
                       <TeamTab

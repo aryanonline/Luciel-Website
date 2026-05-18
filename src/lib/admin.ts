@@ -409,3 +409,65 @@ export async function revokeInvite(
     `/api/v1/admin/invites/${inviteId}`,
   );
 }
+
+// =====================================================================
+// Step 30a.5 — Cookied Domain self-serve
+// =====================================================================
+//
+// Mirrors app/api/v1/admin.py::{create_domain_self_serve,
+// list_domains_self_serve, deactivate_domain_self_serve}. tenant_id is
+// always derived server-side from the cookied user's active
+// ScopeAssignment, never accepted on the client payload (cross-tenant
+// safety). The slug regex is enforced both client-side (UX) and server-
+// side (truth) -- ^[a-z0-9][a-z0-9-]*[a-z0-9]$.
+
+export interface DomainConfig {
+  id: number;
+  tenant_id: string;
+  domain_id: string;
+  display_name: string;
+  description: string | null;
+  system_prompt_additions: string | null;
+  allowed_tools: unknown[] | null;
+  escalation_contact: string | null;
+  policy_overrides: Record<string, unknown> | null;
+  preferred_provider: string | null;
+  active: boolean;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateDomainSelfServeRequest {
+  /** Lowercase, hyphen-allowed slug (`^[a-z0-9][a-z0-9-]*[a-z0-9]$`). */
+  domain_id: string;
+  display_name: string;
+  description?: string;
+}
+
+/** Client-side slug regex — keep in sync with app/schemas/admin.py. */
+export const DOMAIN_SLUG_REGEX = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
+
+export async function createDomainSelfServe(
+  payload: CreateDomainSelfServeRequest,
+): Promise<DomainConfig> {
+  return request<DomainConfig>(
+    "POST",
+    `/api/v1/admin/domains/self-serve`,
+    payload as unknown as Record<string, unknown>,
+  );
+}
+
+export async function listDomainsSelfServe(): Promise<DomainConfig[]> {
+  return request<DomainConfig[]>("GET", `/api/v1/admin/domains/self-serve`);
+}
+
+export async function deactivateDomainSelfServe(
+  domainId: string,
+): Promise<void> {
+  return request<void>(
+    "DELETE",
+    `/api/v1/admin/domains/self-serve/${encodeURIComponent(domainId)}`,
+  );
+}

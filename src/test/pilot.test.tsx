@@ -211,13 +211,15 @@ describe("Pricing page pilot refund footnote", () => {
 // ---------------------------------------------------------------------------
 
 describe("Pricing page primary CTA label gating", () => {
-  it("renders 'Start 90-day pilot' on the Individual + Team monthly cards", () => {
+  it("renders 'Start 90-day pilot' on all three monthly cards (Step 30a.5)", () => {
     renderPricing();
-    // Default cadence is "monthly". Individual + Team are
-    // ``primary === 'checkout'`` cards; Company is ``demo-with-skip`` and
-    // keeps "Book a demo" as the primary, so we only assert two pilot CTAs.
+    // Default cadence is "monthly". As of Step 30a.5, all three tiers
+    // are ``primary === 'checkout'`` (the Company tier's legacy
+    // ``demo-with-skip`` branch was retired with the Pricing.tsx leg of
+    // ``D-marketing-product-boundary-soft-2026-05-16``), so every tier
+    // card now renders the pilot CTA on the monthly cadence.
     const pilotCtas = screen.getAllByRole("button", { name: /start 90-day pilot/i });
-    expect(pilotCtas).toHaveLength(2);
+    expect(pilotCtas).toHaveLength(3);
     // The legacy label must not appear on the rendered page.
     expect(screen.queryByRole("button", { name: /start free trial/i })).toBeNull();
   });
@@ -229,11 +231,11 @@ describe("Pricing page primary CTA label gating", () => {
     // (not user-event) so we don't introduce a new test dependency.
     const annualToggle = screen.getByRole("tab", { name: /annual/i });
     fireEvent.click(annualToggle);
-    // After toggling, the two self-serve cards must label their primary
+    // After toggling, all three self-serve cards must label their primary
     // CTA as "Start annual plan" — the pilot is monthly-only per
     // CANONICAL_RECAP §14 ¶273, so annual buyers never see the pilot label.
     const annualCtas = screen.getAllByRole("button", { name: /start annual plan/i });
-    expect(annualCtas).toHaveLength(2);
+    expect(annualCtas).toHaveLength(3);
     expect(screen.queryByRole("button", { name: /start 90-day pilot/i })).toBeNull();
   });
 });

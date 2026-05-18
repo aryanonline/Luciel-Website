@@ -115,6 +115,19 @@ export interface SubscriptionStatus {
    * still enforces the cutoff (returns 409 PilotWindowExpiredError).
    */
   pilot_window_end: string | null;
+  /**
+   * Step 30a.5 — cookied user's role on their active ScopeAssignment
+   * ("owner" | "tenant_admin" | "department_lead" | "teammate").
+   * Used together with `tier` to gate the CompanyTab (visible iff
+   * tier === "company" AND role in ("tenant_admin", "owner")) and the
+   * TeamTab (visible iff tier in ("team", "company") AND role in
+   * ("tenant_admin", "owner", "department_lead")) on /dashboard.
+   *
+   * null when the cookied user has no active ScopeAssignment yet --
+   * the dashboard simply hides the org-building tabs in that case.
+   * Source: design doc §11 Q5 (resolved 2026-05-18: tier AND role).
+   */
+  active_role: string | null;
 }
 
 /**
